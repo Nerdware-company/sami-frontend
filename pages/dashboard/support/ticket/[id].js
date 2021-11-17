@@ -238,7 +238,7 @@ const TicketViewPage = () => {
                         <a
                           href={URL.createObjectURL(item)}
                           target="_blank"
-                          className="text-sm text-gray-600"
+                          className="text-sm text-gray-600" rel="noreferrer"
                         >
                           {item.name}
                         </a>
@@ -345,7 +345,7 @@ const TicketViewPage = () => {
                                     : URL.createObjectURL(item)
                                 }
                                 target="_blank"
-                                className="text-sm text-gray-600 mr-2"
+                                className="text-sm text-gray-600 mr-2" rel="noreferrer"
                               >
                                 {item.url
                                   ? item.url

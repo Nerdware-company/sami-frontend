@@ -2,6 +2,7 @@
   "extends": ["next", "prettier"],
   "plugins": ["prettier"],
   "rules": {
+    "next": ["off", {}],
     "prettier/prettier": [
       "off",
       {

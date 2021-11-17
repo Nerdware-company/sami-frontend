@@ -391,7 +391,7 @@ const Pricing = ({ data }) => {
                         .join()}&numberOfUsers=${
                         formState.numberOfUsers
                       }&paymentRecurrence=${formState.paymentRecurrence}`}
-                      className={`text-center w-full button  text-white px-2 py-2 rounded-md bg-indigo-600`}
+                      className={`text-center w-full button  text-white px-2 py-2 rounded-md bg-indigo-600`} rel="noreferrer"
                     >
                       Buy Now
                     </a>
