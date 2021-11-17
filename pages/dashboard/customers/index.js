@@ -72,16 +72,16 @@ const CustomerListPage = () => {
                     .slice()
                     .sort((a, b) => b.id - a.id)
                     .map((item) => (
-                      <div class="max-w-sm rounded-lg overflow-hidden shadow-lg mt-2 bg-white">
+                      <div className="max-w-sm rounded-lg overflow-hidden shadow-lg mt-2 bg-white">
                         <div
-                          class="relative z-10"
+                          className="relative z-10"
                           style={{
                             clipPath:
                               "polygon(0 0, 100% 0, 100% 100%, 0 calc(100% - 5vw))",
                           }}
                         >
                           <img
-                            class="w-full"
+                            className="w-full"
                             src={
                               item?.picture?.url
                                 ? getStrapiURL(item?.picture?.url)
@@ -90,25 +90,25 @@ const CustomerListPage = () => {
                             alt="Profile image"
                           />
                           <div
-                            class="text-center absolute w-full"
+                            className="text-center absolute w-full"
                             style={{
                               bottom: "4rem",
                             }}
                           >
-                            <p class="text-white tracking-wide uppercase text-lg font-bold">
+                            <p className="text-white tracking-wide uppercase text-lg font-bold">
                               {item.username}
                             </p>
                           </div>
                         </div>
-                        <div class="pt pb-8 text-gray-600 text-center">
+                        <div className="pt pb-8 text-gray-600 text-center">
                           <p>{item.username} </p>
-                          <p class="text-sm">{item.email}</p>
+                          <p className="text-sm">{item.email}</p>
                         </div>
 
-                        <div class="pb-10 uppercase text-center tracking-wide flex justify-around">
+                        <div className="pb-10 uppercase text-center tracking-wide flex justify-around">
                           <a
                             href={`/dashboard/subscriptions/customer/${item.id}`}
-                            class="p-4 text-white bg-primary-600 rounded-full hover:bg-primary-500 focus:bg-primary-700 transition ease-in duration-200 focus:outline-none"
+                            className="p-4 text-white bg-primary-600 rounded-full hover:bg-primary-500 focus:bg-primary-700 transition ease-in duration-200 focus:outline-none"
                           >
                             View Subscriptions
                           </a>

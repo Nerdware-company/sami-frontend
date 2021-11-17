@@ -57,30 +57,30 @@ const InvoiceViewPage = () => {
   return (
     <ProtectedRoute router={router}>
       <LayoutSidebar>
-        <div class="container mt-5 mb-3">
-          <div class="flex flex-wrap flex-row justify-center">
-            <div class="md:w-2/3  bg-white rounded-xs">
-              <div class="card">
-                <div class="flex flex-row p-2 pr-4 pl-4">
+        <div className="container mt-5 mb-3">
+          <div className="flex flex-wrap flex-row justify-center">
+            <div className="md:w-2/3  bg-white rounded-xs">
+              <div className="card">
+                <div className="flex flex-row p-2 pr-4 pl-4">
                   <img src="https://i.imgur.com/vzlPPh3.png" width="48" />
-                  <div class="flex flex-col">
-                    <span class="font-bold">Invoice</span>{" "}
+                  <div className="flex flex-col">
+                    <span className="font-bold">Invoice</span>{" "}
                     <small>INV-{invoice.id}</small>{" "}
                   </div>
                 </div>
                 <hr />
-                <div class="block w-full overflow-auto scrolling-touch p-2 pr-4 pl-4">
-                  <table class="w-full max-w-full mb-4 bg-transparent table-borderless">
+                <div className="block w-full overflow-auto scrolling-touch p-2 pr-4 pl-4">
+                  <table className="w-full max-w-full mb-4 bg-transparent table-borderless">
                     <tbody>
-                      <tr class="add">
+                      <tr className="add">
                         <td>To</td>
                         <td>From</td>
                       </tr>
-                      <tr class="content">
-                        <td class="font-bold">
+                      <tr className="content">
+                        <td className="font-bold">
                           {username} <br />
                         </td>
-                        <td class="font-bold">
+                        <td className="font-bold">
                           Decart Group <br /> Amman, Jordan
                         </td>
                       </tr>
@@ -88,45 +88,45 @@ const InvoiceViewPage = () => {
                   </table>
                 </div>
                 <hr />
-                <div class="products p-2 pr-4 pl-4">
-                  <table class="w-full max-w-full mb-4 bg-transparent table-borderless">
+                <div className="products p-2 pr-4 pl-4">
+                  <table className="w-full max-w-full mb-4 bg-transparent table-borderless">
                     <tbody>
-                      <tr class="add">
+                      <tr className="add">
                         <td>Description</td>
                       </tr>
-                      <tr class="content">
+                      <tr className="content">
                         <td>Website Redesign</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
                 <hr />
-                <div class="products p-2 pr-4 pl-4">
-                  <table class="w-full max-w-full mb-4 bg-transparent table-borderless">
+                <div className="products p-2 pr-4 pl-4">
+                  <table className="w-full max-w-full mb-4 bg-transparent table-borderless">
                     <tbody>
-                      <tr class="add">
+                      <tr className="add">
                         <td></td>
                         <td>Subtotal</td>
                         <td>Discount(%)</td>
-                        <td class="text-center">Total</td>
+                        <td className="text-center">Total</td>
                       </tr>
-                      <tr class="content">
+                      <tr className="content">
                         <td></td>
                         <td>${invoice.subTotal}</td>
                         <td>{invoice.discount || 0}</td>
-                        <td class="text-center">${invoice.subTotal}</td>
+                        <td className="text-center">${invoice.subTotal}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
                 {/* <hr />
-                <div class="address p-2 pr-4 pl-4">
-                  <table class="table table-borderless">
+                <div className="address p-2 pr-4 pl-4">
+                  <table className="table table-borderless">
                     <tbody>
-                      <tr class="add">
+                      <tr className="add">
                         <td>Bank Details</td>
                       </tr>
-                      <tr class="content">
+                      <tr className="content">
                         <td>
                           {" "}
                           Bank Name : ADS BANK <br /> Swift Code : ADS1234Q{" "}
