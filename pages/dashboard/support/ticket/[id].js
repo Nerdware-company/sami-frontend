@@ -238,7 +238,8 @@ const TicketViewPage = () => {
                         <a
                           href={URL.createObjectURL(item)}
                           target="_blank"
-                          className="text-sm text-gray-600" rel="noreferrer"
+                          className="text-sm text-gray-600"
+                          rel="noreferrer"
                         >
                           {item.name}
                         </a>
@@ -345,7 +346,8 @@ const TicketViewPage = () => {
                                     : URL.createObjectURL(item)
                                 }
                                 target="_blank"
-                                className="text-sm text-gray-600 mr-2" rel="noreferrer"
+                                className="text-sm text-gray-600 mr-2"
+                                rel="noreferrer"
                               >
                                 {item.url
                                   ? item.url
@@ -367,45 +369,45 @@ const TicketViewPage = () => {
   );
 };
 
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
+// export async function getStaticProps(context) {
+//   const { params, locale, locales, defaultLocale, preview = null } = context;
 
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
+//   const globalLocale = await getGlobalData(locale);
+//   // Fetch pages. Include drafts if preview mode is on
 
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
+//   const pageContext = {
+//     locales,
+//     defaultLocale,
+//     slug: "testing",
+//   };
 
-  const localizedPaths = getLocalizedPaths(pageContext);
+//   const localizedPaths = getLocalizedPaths(pageContext);
 
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
+//   return {
+//     props: {
+//       global: globalLocale,
+//       pageContext: {
+//         ...pageContext,
+//         localizedPaths,
+//       },
+//     },
+//   };
+// }
 
 export default TicketViewPage;
 
-export const getStaticPaths = async () => {
-  const res = await fetch(getStrapiURL("/tickets"));
-  const data = await res.json();
+// export const getStaticPaths = async () => {
+//   const res = await fetch(getStrapiURL("/tickets"));
+//   const data = await res.json();
 
-  const paths = data.map((item) => {
-    return {
-      params: { id: `ticket-${item.code.toString()}` },
-    };
-  });
+//   const paths = data.map((item) => {
+//     return {
+//       params: { id: `ticket-${item.code.toString()}` },
+//     };
+//   });
 
-  return {
-    paths,
-    fallback: false,
-  };
-};
+//   return {
+//     paths,
+//     fallback: false,
+//   };
+// };
