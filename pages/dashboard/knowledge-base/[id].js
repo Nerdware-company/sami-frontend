@@ -100,45 +100,45 @@ const FaqViewPage = () => {
   );
 };
 
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
+// export async function getStaticProps(context) {
+//   const { params, locale, locales, defaultLocale, preview = null } = context;
 
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
+//   const globalLocale = await getGlobalData(locale);
+//   // Fetch pages. Include drafts if preview mode is on
 
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
+//   const pageContext = {
+//     locales,
+//     defaultLocale,
+//     slug: "testing",
+//   };
 
-  const localizedPaths = getLocalizedPaths(pageContext);
+//   const localizedPaths = getLocalizedPaths(pageContext);
 
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
+//   return {
+//     props: {
+//       global: globalLocale,
+//       pageContext: {
+//         ...pageContext,
+//         localizedPaths,
+//       },
+//     },
+//   };
+// }
 
 export default FaqViewPage;
 
-export const getStaticPaths = async () => {
-  const res = await fetch(getStrapiURL("/faqs"));
-  const data = await res.json();
+// export const getStaticPaths = async () => {
+//   const res = await fetch(getStrapiURL("/faqs"));
+//   const data = await res.json();
 
-  const paths = data.map((item) => {
-    return {
-      params: { id: `${item.id.toString()}` },
-    };
-  });
+//   const paths = data.map((item) => {
+//     return {
+//       params: { id: `${item.id.toString()}` },
+//     };
+//   });
 
-  return {
-    paths,
-    fallback: false,
-  };
-};
+//   return {
+//     paths,
+//     fallback: false,
+//   };
+// };
