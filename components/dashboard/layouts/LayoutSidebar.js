@@ -123,12 +123,12 @@ export default function LayoutSidebar({ children }) {
           <div className="flex items-center">
             <img
               className="h-12"
-              src="http://127.0.0.1:1337/uploads/geekware_icon_2536384929.png?8071169.5"
+              src={getStrapiMedia("erponelogo_54b888850f.png")}
             />
 
-            <span className="text-gray-500 dark:text-white text-opacity-75 text-3xl mx-2 font-semibold">
+            {/* <span className="text-gray-500 dark:text-white text-opacity-75 text-3xl mx-2 font-semibold">
               Dashboard
-            </span>
+            </span> */}
           </div>
         </div>
 

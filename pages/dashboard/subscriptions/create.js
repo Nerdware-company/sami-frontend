@@ -215,8 +215,16 @@ const SubscriptionCreatePage = () => {
 
     let calculatedTotal = calculatedSubtotal * discountPercentage;
 
-    setFormState("subTotal", calculatedSubtotal);
-    setFormState("total", calculatedTotal);
+    if (
+      formState.services.length > 0 &&
+      formState.numberOfUsers > 0 &&
+      formState.paymentRecurrence
+    ) {
+      console.log("all good");
+      console.log(calculatedSubtotal);
+      setFormState("subTotal", calculatedSubtotal);
+      setFormState("total", calculatedTotal);
+    }
   };
 
   React.useEffect(() => {
@@ -230,11 +238,29 @@ const SubscriptionCreatePage = () => {
     formState.numberOfUsers,
     formState.discount,
     formState.paymentRecurrence,
+    services,
   ]);
 
   React.useEffect(() => {
     handleCheckSubdomain(formState.subdomain);
   }, [formState.subdomain]);
+
+  React.useEffect(() => {
+    if (router.query.services) {
+      let queryPaymentRecurrence = router.query.paymentRecurrence;
+      let queryNumberOfUsers = router.query.numberOfUsers;
+      let queryServices = router.query.services
+        .split(",")
+        .map((i) => Number(i));
+      setFormState("numberOfUsers", queryNumberOfUsers);
+      setFormState("services", [...formState.services, ...queryServices]);
+      setFormState("paymentRecurrence", queryPaymentRecurrence);
+    }
+  }, [router]);
+
+  React.useEffect(() => {
+    console.log(formState.services);
+  }, [formState.services]);
 
   return (
     <ProtectedRoute router={router}>
@@ -373,7 +399,9 @@ const SubscriptionCreatePage = () => {
                           >
                             {Object.values(PAYMENT_RECURRENCE_OPTIONS).map(
                               (item) => (
-                                <option value={item.id}>{item.id}</option>
+                                <option key={item.id} value={item.id}>
+                                  {item.id}
+                                </option>
                               )
                             )}
                           </select>

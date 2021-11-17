@@ -5,6 +5,7 @@ import { getLocalizedPaths } from "utils/localize";
 import { setCookie } from "nookies";
 import AuthContext from "store/authContext";
 import ProtectedRoute from "@/components/dashboard/ProtectedRoute";
+import { getStrapiMedia } from "utils/media";
 
 const ACCOUNT_TYPES = [
   {
@@ -75,7 +76,7 @@ const RegisterPage = (props) => {
               <img
                 aria-hidden="true"
                 className="object-contain w-full h-full"
-                src="../../assets/images/geekware-macbook.png"
+                src={getStrapiMedia("erponelogo_54b888850f.png")}
                 alt="Office"
               />
             </div>

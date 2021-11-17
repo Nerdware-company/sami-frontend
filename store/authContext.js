@@ -61,6 +61,8 @@ export const AuthContextProvider = ({ children }) => {
           path: "/",
         });
         setAuthReady(true);
+      } else {
+        logout();
       }
     } catch (error) {
       console.log("the error", error);

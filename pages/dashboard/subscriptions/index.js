@@ -130,13 +130,7 @@ const SubscriptionListPage = () => {
       customer: {
         id: null,
         first_name: "First Name",
-        middle_name: "Middle Name",
-        last_name: "Last Name",
         email: "demo@email.com",
-        phone: {
-          country_code: "965",
-          number: "99999999",
-        },
       },
       order: {
         amount: 100,
@@ -148,34 +142,6 @@ const SubscriptionListPage = () => {
             description: "item1 desc",
             quantity: "1",
             amount_per_unit: "00.000",
-            discount: {
-              type: "P",
-              value: "10%",
-            },
-            total_amount: "000.000",
-          },
-          {
-            id: 2,
-            name: "item2",
-            description: "item2 desc",
-            quantity: "2",
-            amount_per_unit: "00.000",
-            discount: {
-              type: "P",
-              value: "10%",
-            },
-            total_amount: "000.000",
-          },
-          {
-            id: 3,
-            name: "item3",
-            description: "item3 desc",
-            quantity: "1",
-            amount_per_unit: "00.000",
-            discount: {
-              type: "P",
-              value: "10%",
-            },
             total_amount: "000.000",
           },
         ],
@@ -199,12 +165,45 @@ const SubscriptionListPage = () => {
             email: false,
             sms: true,
           },
-          redirect: "http://localhost/redirect.html",
+          redirect: "http://127.0.0.1:3000/redirect_url",
           post: null,
         },
       },
     });
     goSell.openLightBox();
+  };
+
+  const handleCreateBankTransferInvoice = async (subData) => {
+    let dataToSubmit = {
+      subscription: subData.id,
+      total: subData.total,
+      subTotal: subData.subTotal,
+      discount: subData.discount,
+      status: "pending",
+      paymentType: "banktransfer",
+    };
+
+    try {
+      const response = await fetch(getStrapiURL(`/invoices`), {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify(dataToSubmit),
+      });
+
+      const { status } = response;
+
+      if (status == 200) {
+        router.push("/dashboard/invoices");
+      } else {
+        console.log(response);
+      }
+    } catch (error) {
+      console.log("the error", error);
+    }
   };
 
   React.useEffect(() => {
@@ -399,7 +398,7 @@ const SubscriptionListPage = () => {
                           </span>
                         ) : (
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                            Inactive
+                            Activated within 24hrs
                           </span>
                         )}
                       </td>
@@ -413,20 +412,28 @@ const SubscriptionListPage = () => {
                         </a>
                       </td>
                       <td className="px-6 py-4 whitespace-no-wrap text-right border-b border-gray-200 text-sm leading-5 font-medium">
-                        <DropDownButton
-                          options={[
-                            {
-                              text: "Credit Card",
-                              action: () => {
-                                handlePay(item);
+                        {new Date(item.expires_at) < Date.now() && (
+                          <DropDownButton
+                            options={[
+                              {
+                                text: "Credit Card",
+                                action: () => {
+                                  // handlePay(item);
+                                },
                               },
-                            },
-                            {
-                              text: "Crypto Currency",
-                              action: () => {},
-                            },
-                          ]}
-                        />
+                              {
+                                text: "Crypto Currency",
+                                action: () => {},
+                              },
+                              {
+                                text: "Bank Transfer",
+                                action: () => {
+                                  handleCreateBankTransferInvoice(item);
+                                },
+                              },
+                            ]}
+                          />
+                        )}
                       </td>
                       {/* 
                         <td className="px-6 py-4 whitespace-no-wrap text-right border-b border-gray-200 text-sm leading-5 font-medium">

@@ -1,5 +1,4 @@
 {
-  "proxy": "https://eu-test.oppwa.com:443",
   "name": "cms-strapi",
   "version": "1.0.0",
   "scripts": {

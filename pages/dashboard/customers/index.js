@@ -82,7 +82,11 @@ const CustomerListPage = () => {
                         >
                           <img
                             class="w-full"
-                            src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=880&q=80"
+                            src={
+                              item?.picture?.url
+                                ? getStrapiURL(item?.picture?.url)
+                                : "/assets/images/new-user.jpeg"
+                            }
                             alt="Profile image"
                           />
                           <div

@@ -5,6 +5,7 @@ import { setCookie, parseCookies } from "nookies";
 import AuthContext from "store/authContext";
 import ProtectedRoute from "@/components/dashboard/ProtectedRoute";
 import { useRouter } from "next/router";
+import { getStrapiMedia } from "utils/media";
 
 const LoginPage = ({ sections, metadata, preview, global, pageContext }) => {
   const router = useRouter();
@@ -37,7 +38,7 @@ const LoginPage = ({ sections, metadata, preview, global, pageContext }) => {
               <img
                 aria-hidden="true"
                 className="object-contain w-full h-full LoginPagehidden"
-                src="../../assets/images/geekware-macbook.png"
+                src={getStrapiMedia("erponelogo_54b888850f.png")}
                 alt="Office"
               />
             </div>

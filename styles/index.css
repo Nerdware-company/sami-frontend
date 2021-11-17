@@ -50,7 +50,7 @@ html {
 }
 
 .hero {
-  background: purple;
+  background: #166687;
   color: white;
   clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
   padding: 100px 0;
@@ -147,4 +147,20 @@ html {
 }
 #toggleTheme:checked ~ label div.toggle-background {
   background-color: rgb(38, 129, 248);
+}
+
+hr {
+  color: #0000004f;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.add td {
+  color: #c5c4c4;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.content {
+  font-size: 14px;
 }

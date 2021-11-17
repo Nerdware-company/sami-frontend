@@ -305,45 +305,4 @@ const TicketViewPage = () => {
   );
 };
 
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
-
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
-
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
-
-  const localizedPaths = getLocalizedPaths(pageContext);
-
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
-
 export default TicketViewPage;
-
-export const getStaticPaths = async () => {
-  const res = await fetch(getStrapiURL("/tickets"));
-  const data = await res.json();
-
-  const paths = data.map((item) => {
-    return {
-      params: { id: `ticket-${item.code.toString()}` },
-    };
-  });
-
-  return {
-    paths,
-    fallback: false,
-  };
-};
