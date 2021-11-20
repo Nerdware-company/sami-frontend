@@ -55,7 +55,7 @@ const DynamicPage = ({ sections, metadata, preview, global, pageContext }) => {
 //   return { paths, fallback: true };
 // }
 
-export async function getInitialProps(context) {
+export async function getServerSideProps(context) {
   const { params, locale, locales, defaultLocale, preview = null } = context;
 
   const globalLocale = await getGlobalData(locale);
