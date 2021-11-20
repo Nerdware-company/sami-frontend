@@ -8,7 +8,7 @@ const FeatureRowsGroup = ({ data }) => {
     <div className="container flex flex-col gap-12 py-12">
       {data.features.map((feature, index) => (
         <div
-          id={feature.idRef ? feature.idRef : ""}
+          id={feature.IdRef ? feature.IdRef : ""}
           className={classNames(
             // Common classes
             "flex flex-col justify-start md:justify-between md:items-center gap-10",
