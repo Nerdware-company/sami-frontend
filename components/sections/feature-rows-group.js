@@ -1,13 +1,14 @@
-import classNames from "classnames"
-import NextImage from "../elements/image"
-import Video from "../elements/video"
-import CustomLink from "../elements/custom-link"
+import classNames from "classnames";
+import NextImage from "../elements/image";
+import Video from "../elements/video";
+import CustomLink from "../elements/custom-link";
 
 const FeatureRowsGroup = ({ data }) => {
   return (
     <div className="container flex flex-col gap-12 py-12">
       {data.features.map((feature, index) => (
         <div
+          id={feature.idRef ? feature.idRef : ""}
           className={classNames(
             // Common classes
             "flex flex-col justify-start md:justify-between md:items-center gap-10",
@@ -22,11 +23,13 @@ const FeatureRowsGroup = ({ data }) => {
           <div className="w-full lg:w-6/12 lg:pr-6 text-lg">
             <h3 className="title">{feature.title}</h3>
             <p className="my-6">{feature.description}</p>
-            <CustomLink link={feature.link}>
-              <div className="text-blue-600 with-arrow hover:underline">
-                {feature.link.text}
-              </div>
-            </CustomLink>
+            {feature.link && (
+              <CustomLink link={feature.link}>
+                <div className="text-blue-600 with-arrow hover:underline">
+                  {feature.link.text}
+                </div>
+              </CustomLink>
+            )}
           </div>
           {/* Media section */}
           <div className="w-full sm:9/12 lg:w-4/12 max-h-full">
@@ -38,18 +41,20 @@ const FeatureRowsGroup = ({ data }) => {
             )}
             {/* Videos */}
             {feature.media.mime.startsWith("video") && (
-              <Video
-                media={feature.media}
-                className="w-full h-auto"
-                autoPlay
-                controls={false}
-              />
+              <div className="border-2 border-primary-500 rounded-xl overflow-hidden">
+                <Video
+                  media={feature.media}
+                  className="w-full h-auto"
+                  autoPlay={false}
+                  controls={true}
+                />
+              </div>
             )}
           </div>
         </div>
       ))}
     </div>
-  )
-}
+  );
+};
 
-export default FeatureRowsGroup
+export default FeatureRowsGroup;

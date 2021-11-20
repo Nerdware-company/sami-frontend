@@ -1,5 +1,5 @@
 import React from "react";
-import { getGlobalData, getStrapiURL } from "utils/api";
+import { fetchAPI, getGlobalData, getStrapiURL } from "utils/api";
 import { useRouter } from "next/router";
 import Layout from "@/components/layout";
 import { getLocalizedPaths } from "utils/localize";
@@ -92,6 +92,27 @@ const BlogViewPage = ({ sections, metadata, preview, global, pageContext }) => {
   );
 };
 
+export async function getStaticPaths(context) {
+  // Get all posts from Strapi
+  const allPosts = context.locales.map(async (locale) => {
+    const localePosts = await fetchAPI(`/posts?_locale=${locale}`);
+    return localePosts;
+  });
+
+  const posts = await (await Promise.all(allPosts)).flat();
+
+  const paths = posts.map((post) => {
+    // Decompose the slug that was saved in Strapi
+
+    return {
+      params: { id: `${post.id.toString()}` },
+      // Specify the locale to render
+      locale: post.locale,
+    };
+  });
+  return { paths, fallback: true };
+}
+
 export async function getStaticProps(context) {
   const { params, locale, locales, defaultLocale, preview = null } = context;
 
@@ -117,21 +138,5 @@ export async function getStaticProps(context) {
     },
   };
 }
-
-export const getStaticPaths = async () => {
-  const res = await fetch(getStrapiURL("/posts"));
-  const data = await res.json();
-
-  const paths = data.map((item) => {
-    return {
-      params: { id: `${item.id.toString()}` },
-    };
-  });
-
-  return {
-    paths,
-    fallback: false,
-  };
-};
 
 export default BlogViewPage;

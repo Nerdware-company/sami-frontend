@@ -55,7 +55,7 @@ export const AuthContextProvider = ({ children }) => {
         handleSetUser(jwt, responseJSON);
         Cookies.set("jwt", jwt, {
           httpOnly: false,
-          secure: process.env.NODE_ENV !== "development",
+          secure: false,
           // maxAge: 60 * 60 * 24 * 30,
           sameSite: "strict",
           path: "/",

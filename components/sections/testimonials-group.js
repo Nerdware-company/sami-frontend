@@ -1,22 +1,24 @@
-import classNames from "classnames"
-import { useState } from "react"
-import NextImage from "../elements/image"
-import CustomLink from "../elements/custom-link"
+import classNames from "classnames";
+import { useState } from "react";
+import NextImage from "../elements/image";
+import CustomLink from "../elements/custom-link";
 
 const TestimonialsGroup = ({ data }) => {
   // Only show one testimonial at a time
-  const [selectedTestimonialIndex, setSelectedTestimonialIndex] = useState(0)
-  const selectedTestimonial = data.testimonials[selectedTestimonialIndex]
+  const [selectedTestimonialIndex, setSelectedTestimonialIndex] = useState(0);
+  const selectedTestimonial = data.testimonials[selectedTestimonialIndex];
 
   return (
     <section className="text-center text-lg bg-gray-200 pt-12 pb-16">
       <h2 className="title mb-4">{data.title}</h2>
       <p className="text-gray-700 mb-4">{data.description}</p>
-      <CustomLink link={data.link}>
-        <span className="with-arrow text-blue-700 hover:underline">
-          {data.link.text}
-        </span>
-      </CustomLink>
+      {data.link && (
+        <CustomLink link={data.link}>
+          <span className="with-arrow text-blue-700 hover:underline">
+            {data.link.text}
+          </span>
+        </CustomLink>
+      )}
       {/* Current testimonial card */}
       <div className="max-w-5xl w-8/12 sm:w-8/12 bg-white shadow-md sm:shadow-xl mx-auto flex flex-col sm:flex-row mt-10 text-left">
         <div className="w-full md:w-4/12 flex-shrink-0">
@@ -39,18 +41,20 @@ const TestimonialsGroup = ({ data }) => {
               {selectedTestimonial.authorTitle}
             </p>
           </div>
-          <CustomLink
-            link={{
-              url: selectedTestimonial.link,
-              text: "",
-              newTab: false,
-              id: 0,
-            }}
-          >
-            <span className="uppercase tracking-wide text-blue-700 hover:underline  with-arrow sm:self-end mt-6 sm:mt-0">
-              Read story
-            </span>
-          </CustomLink>
+          {data.link && (
+            <CustomLink
+              link={{
+                url: selectedTestimonial.link,
+                text: "",
+                newTab: false,
+                id: 0,
+              }}
+            >
+              <span className="uppercase tracking-wide text-blue-700 hover:underline  with-arrow sm:self-end mt-6 sm:mt-0">
+                Read story
+              </span>
+            </CustomLink>
+          )}
         </div>
       </div>
       {/* Change selected testimonial (only if there is more than one) */}
@@ -79,7 +83,7 @@ const TestimonialsGroup = ({ data }) => {
         ))}
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default TestimonialsGroup
+export default TestimonialsGroup;

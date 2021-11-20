@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import PropTypes from "prop-types";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -20,18 +20,34 @@ import AuthContext from "store/authContext";
 const Navbar = ({ navbar, pageContext }) => {
   const router = useRouter();
   const { user } = React.useContext(AuthContext);
-  const [mobileMenuIsShown, setMobileMenuIsShown] = useState(false);
+  const [mobileMenuIsShown, setMobileMenuIsShown] = React.useState(false);
+  const [navbarActive, setNavbarActive] = React.useState(true);
+
+  // const handleSetNavbarActive = () => {
+  //   if (window.scrollY >= 80) {
+  //     return setNavbarActive(true);
+  //   }
+  //   setNavbarActive(false);
+  // };
+
+  // window.addEventListener("scroll", handleSetNavbarActive);
 
   return (
     <>
       {/* The actual navbar */}
-      <nav className="border-gray-200 border-b-2 py-6 sm:py-2">
+      <nav
+        className={`flex items-center sticky top-0 z-50 py-6 lg:h-20 sm:py-2 ${
+          navbarActive
+            ? `bg-white border-gray-200 border-b-2`
+            : `bg-primary-500 border-primary-500 border-b-2`
+        }`}
+      >
         <div className="container flex flex-row items-center justify-between">
           {/* Content aligned to the left */}
           <div className="flex flex-row items-center">
             <Link href="/">
-              <a className="h-8 w-32">
-                <NextImage width="120" height="33" media={navbar.logo} />
+              <a className="h-12 w-32">
+                <NextImage width="120" height="50" media={navbar.logo} />
               </a>
             </Link>
             {/* List of links on desktop */}
@@ -39,7 +55,13 @@ const Navbar = ({ navbar, pageContext }) => {
               {navbar.links.map((navLink) => (
                 <li key={navLink.id}>
                   <CustomLink link={navLink} locale={router.locale}>
-                    <div className="hover:text-gray-900 px-2 py-1">
+                    <div
+                      className={`px-2 py-1 overflow-hidden ${
+                        navbarActive
+                          ? `text-gray-700 hover:text-gray-900 `
+                          : `text-white font-bold`
+                      }`}
+                    >
                       {navLink.text}
                     </div>
                   </CustomLink>

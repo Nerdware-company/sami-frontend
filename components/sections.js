@@ -1,6 +1,8 @@
 import { useRouter } from "next/router";
 import Hero from "@/components/sections/hero";
 import LargeVideo from "@/components/sections/large-video";
+import FeatureGridGroup from "@/components/sections/feature-grid-group";
+import FeatureCarouselGroup from "./sections/feature-carousel-group";
 import FeatureColumnsGroup from "@/components/sections/feature-columns-group";
 import FeatureRowsGroup from "@/components/sections/feature-rows-group";
 import BottomActions from "@/components/sections/bottom-actions";
@@ -13,6 +15,8 @@ import LeadForm from "./sections/lead-form";
 const sectionComponents = {
   "sections.hero": Hero,
   "sections.large-video": LargeVideo,
+  "sections.feature-grid-group": FeatureGridGroup,
+  "sections.feature-carousel-group": FeatureCarouselGroup,
   "sections.feature-columns-group": FeatureColumnsGroup,
   "sections.feature-rows-group": FeatureRowsGroup,
   "sections.bottom-actions": BottomActions,

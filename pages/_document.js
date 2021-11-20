@@ -14,6 +14,28 @@ export default class MyDocument extends Document {
             href="https://goSellJSLib.b-cdn.net/v1.6.0/css/gosell.css"
             rel="stylesheet"
           />
+          <link
+            href="https://fonts.googleapis.com/css?family=Cairo:400,700&amp;subset=arabic"
+            rel="stylesheet"
+          ></link>
+          <link
+            rel="stylesheet"
+            href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+            integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU"
+            crossorigin="anonymous"
+          />
+          <link
+            rel="stylesheet"
+            type="text/css"
+            charset="UTF-8"
+            href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.6.0/slick.min.css"
+          />
+          <link
+            rel="stylesheet"
+            type="text/css"
+            href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.6.0/slick-theme.min.css"
+          />
+          <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
           {/* <script
             type="text/javascript"
             src="https://secure.gosell.io/js/sdk/tap.min.js"
