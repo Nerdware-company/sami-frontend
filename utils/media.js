@@ -5,7 +5,7 @@ export function getStrapiMedia(url) {
 
   // Return the full URL if the media is hosted on an external provider
   if (url.startsWith("http") || url.startsWith("//")) {
-    return url;
+    return `https://cors-anywhere.herokuapp.com/http:${url}`;
   }
 
   // Otherwise prepend the URL path with the Strapi URL
