@@ -10,12 +10,14 @@ import TestimonialsGroup from "@/components/sections/testimonials-group";
 import RichText from "./sections/rich-text";
 import Pricing from "./sections/pricing";
 import LeadForm from "./sections/lead-form";
+import PictureCarouselGroup from "./sections/picture-carousel-group";
 
 // Map Strapi sections to section components
 const sectionComponents = {
   "sections.hero": Hero,
   "sections.large-video": LargeVideo,
   "sections.feature-grid-group": FeatureGridGroup,
+  "sections.picture-carousel-group": PictureCarouselGroup,
   "sections.feature-carousel-group": FeatureCarouselGroup,
   "sections.feature-columns-group": FeatureColumnsGroup,
   "sections.feature-rows-group": FeatureRowsGroup,

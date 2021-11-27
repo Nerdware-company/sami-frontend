@@ -3,6 +3,7 @@ import React, { createContext } from "react";
 import { destroyCookie, parseCookies } from "nookies";
 import { getStrapiURL } from "utils/api";
 import Cookies from "js-cookie";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 const AuthContext = createContext({
   user: null,
@@ -23,6 +24,7 @@ const initialUser = {
 };
 
 export const AuthContextProvider = ({ children }) => {
+  const [isLoadingWebsite, setIsLoadingWebsite] = React.useState(true);
   const [authReady, setAuthReady] = React.useState(false);
   const [user, setUser] = React.useState(initialUser);
   const [errors, setErrors] = React.useState([]);
@@ -127,8 +129,16 @@ export const AuthContextProvider = ({ children }) => {
     errors: errors,
   };
 
-  if (authReady === false) {
-    return <div>Loadingd...</div>;
+  React.useEffect(() => {
+    if (isLoadingWebsite) {
+      setTimeout(() => {
+        setIsLoadingWebsite(false);
+      }, 1200);
+    }
+  }, [isLoadingWebsite]);
+
+  if (authReady === false || isLoadingWebsite) {
+    return <LoadingOverlay />;
   }
 
   return (

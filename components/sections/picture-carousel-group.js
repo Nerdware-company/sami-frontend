@@ -3,16 +3,17 @@ import NextImage from "../elements/image";
 import Video from "../elements/video";
 import CustomLink from "../elements/custom-link";
 import Slider from "react-slick";
+import { getStrapiMedia } from "utils/media";
 
 const PictureCarouselGroup = ({ data }) => {
   const settings = {
     // rtl: true,
     dots: true,
     arrows: false,
-    infinite: false,
+    infinite: true,
     speed: 500,
-    slidesToShow: 4,
-    slidesToScroll: 4,
+    slidesToShow: 1,
+    slidesToScroll: 1,
     initialSlide: 0,
     responsive: [
       {
@@ -48,16 +49,9 @@ const PictureCarouselGroup = ({ data }) => {
         <h1 className="text-3xl font-bold text-center mb-4">{data.title}</h1>
         <h3 className="text-md text-center mb-12">{data.description}</h3>
 
-        <div
-          className="flex flex-col justify-start md:justify-between gap-10 lg:flex-row"
-          style={{ height: 300 }}
-        >
+        <div className="flex flex-col justify-start md:justify-between gap-10 lg:flex-row">
           {/* Text section */}
-          <div
-            dir="rtl"
-            className="w-full text-center min-h-full"
-            style={{ height: 300 }}
-          >
+          <div className="w-full text-center min-h-full">
             <Slider {...settings} className="min-h-full">
               {data.pictures.map((picture, index) => (
                 <div
@@ -67,7 +61,13 @@ const PictureCarouselGroup = ({ data }) => {
                   <h1 className="text-xl font-bold text-primary-600 mb-4">
                     {picture.title}
                   </h1>
-                  <NextImage width="200" height="70" media={picture.media} />
+                  <div className="flex justify-center items-center">
+                    <img
+                      src={getStrapiMedia(picture.media.url)}
+                      style={{ maxHeight: 650 }}
+                    />
+                    {/* <NextImage media={picture.media} objectFit="contain" /> */}
+                  </div>
                 </div>
               ))}
             </Slider>
