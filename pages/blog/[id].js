@@ -92,40 +92,16 @@ const BlogViewPage = ({ sections, metadata, preview, global, pageContext }) => {
   );
 };
 
-export async function getStaticPaths(context) {
-  // Get all posts from Strapi
-  const allPosts = context.locales.map(async (locale) => {
-    const localePosts = await fetchAPI(`/posts?_locale=${locale}`);
-    return localePosts;
-  });
-
-  const posts = await (await Promise.all(allPosts)).flat();
-
-  const paths = posts.map((post) => {
-    // Decompose the slug that was saved in Strapi
-
-    return {
-      params: { id: `${post.id.toString()}` },
-      // Specify the locale to render
-      locale: post.locale,
-    };
-  });
-  return { paths, fallback: true };
-}
-
-export async function getStaticProps(context) {
+export async function getServerSideProps(context) {
   const { params, locale, locales, defaultLocale, preview = null } = context;
 
   const globalLocale = await getGlobalData(locale);
-
-  // We have the required page data, pass it to the page component
+  // Fetch pages. Include drafts if preview mode is on
 
   const pageContext = {
     locales,
     defaultLocale,
   };
-
-  const localizedPaths = getLocalizedPaths(pageContext);
 
   return {
     props: {
@@ -133,7 +109,6 @@ export async function getStaticProps(context) {
       global: globalLocale,
       pageContext: {
         ...pageContext,
-        localizedPaths,
       },
     },
   };

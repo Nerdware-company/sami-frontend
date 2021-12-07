@@ -5,8 +5,9 @@ import React from "react";
 import AuthContext from "store/authContext";
 import { getGlobalData, getStrapiURL } from "utils/api";
 import { getLocalizedPaths } from "utils/localize";
+import { getStrapiMedia } from "utils/media";
 
-const CustomerListPage = () => {
+const CustomerListPage = ({ global, translations }) => {
   const router = useRouter();
   const { user } = React.useContext(AuthContext);
   const { jwt, id: loggedInUserId } = user;
@@ -44,18 +45,12 @@ const CustomerListPage = () => {
 
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div>
           <div className="flex flex-row justify-between">
             <h3 className="text-gray-700 text-3xl font-medium">
-              Your Customers
+              {translations.my_customers}
             </h3>
-            <a
-              href="/dashboard/customers/create"
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Create New Customer
-            </a>
           </div>
 
           <div className="flex flex-col mt-8">
@@ -63,7 +58,7 @@ const CustomerListPage = () => {
               <div className="align-middle inline-block min-w-full">
                 {customers.length === 0 && (
                   <div className="text-sm text-center leading-5 font-medium text-gray-900">
-                    You dont have any customers
+                    {translations.you_dont_have_customers}
                   </div>
                 )}
 
@@ -84,8 +79,10 @@ const CustomerListPage = () => {
                             className="w-full"
                             src={
                               item?.picture?.url
-                                ? getStrapiURL(item?.picture?.url)
-                                : "/assets/images/new-user.jpeg"
+                                ? getStrapiMedia(item?.picture?.url)
+                                : getStrapiMedia(
+                                    global.Dashboard.defaultUserImage.url
+                                  )
                             }
                             alt="Profile image"
                           />
@@ -95,13 +92,13 @@ const CustomerListPage = () => {
                               bottom: "4rem",
                             }}
                           >
-                            <p className="text-white tracking-wide uppercase text-lg font-bold">
-                              {item.username}
-                            </p>
+                            {/* <p className="text-white bg-gray-400 tracking-wide uppercase text-lg font-bold">
+                              {item.firstname}
+                            </p> */}
                           </div>
                         </div>
                         <div className="pt pb-8 text-gray-600 text-center">
-                          <p>{item.username} </p>
+                          <p>{item.firstname} </p>
                           <p className="text-sm">{item.email}</p>
                         </div>
 
@@ -110,7 +107,7 @@ const CustomerListPage = () => {
                             href={`/dashboard/subscriptions/customer/${item.id}`}
                             className="p-4 text-white bg-primary-600 rounded-full hover:bg-primary-500 focus:bg-primary-700 transition ease-in duration-200 focus:outline-none"
                           >
-                            View Subscriptions
+                            {translations.view_subscriptions}
                           </a>
                         </div>
                       </div>
@@ -124,30 +121,5 @@ const CustomerListPage = () => {
     </ProtectedRoute>
   );
 };
-
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
-
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
-
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
-
-  const localizedPaths = getLocalizedPaths(pageContext);
-
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
 
 export default CustomerListPage;

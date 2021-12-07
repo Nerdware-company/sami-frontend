@@ -6,6 +6,7 @@ import { setCookie } from "nookies";
 import AuthContext from "store/authContext";
 import ProtectedRoute from "@/components/dashboard/ProtectedRoute";
 import { getStrapiMedia } from "utils/media";
+import countries from "utils/countries";
 
 const ACCOUNT_TYPES = [
   {
@@ -22,18 +23,36 @@ const ACCOUNT_TYPES = [
   },
 ];
 
-const RegisterPage = (props) => {
+const RegisterPage = ({ global, translations }) => {
   const router = useRouter();
   const { login } = React.useContext(AuthContext);
   const [accountType, setAccountType] = React.useState(ACCOUNT_TYPES[0].id);
-  const [username, setUsername] = React.useState("");
+  const [countryCode, setCountryCode] = React.useState(countries[0].dial_code);
+  const [phoneNumber, setPhoneNumber] = React.useState("");
+  const [firstname, setFirstname] = React.useState("");
+  const [lastname, setLastname] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [partnerCode, setPartnerCode] = React.useState("");
 
   const handleRegister = async () => {
+    if (
+      !firstname ||
+      !lastname ||
+      !phoneNumber ||
+      !email ||
+      !password ||
+      !confirmPassword ||
+      !countryCode
+    ) {
+      alert(translations.please_fill_star_fields);
+      return;
+    }
     const registerInfo = {
-      username,
+      phoneNumber: countryCode + phoneNumber,
+      firstname,
+      lastname,
       email,
       password,
       accountType: ACCOUNT_TYPES.filter(
@@ -41,8 +60,20 @@ const RegisterPage = (props) => {
       )[0].name,
     };
 
-    // return console.log(registerInfo);
+    if (partnerCode) {
+      let partnerId = partnerCode.split("-")[1];
+      registerInfo.partner = partnerId;
+    }
 
+    if (
+      ACCOUNT_TYPES.filter(
+        (item) => item.id.toString() === accountType.toString()
+      )[0].name !== "customer"
+    ) {
+      registerInfo.active = false;
+    } else {
+      registerInfo.active = true;
+    }
     try {
       const response = await fetch(getStrapiURL("/auth/local/register"), {
         method: "POST",
@@ -56,7 +87,9 @@ const RegisterPage = (props) => {
       const { status } = response;
 
       if (status == 200) {
-        login({ identifier: email, password });
+        if (accountType === "customer") {
+          login({ identifier: email, password });
+        }
       } else {
         // Handle validation errors
         alert("Handle validation errors");
@@ -76,18 +109,80 @@ const RegisterPage = (props) => {
               <img
                 aria-hidden="true"
                 className="object-contain w-full h-full"
-                src={getStrapiMedia("erponelogo_54b888850f.png")}
+                src={getStrapiMedia(global.ClientArea.loginImage.url)}
                 alt="Office"
               />
             </div>
             <div className="flex items-center justify-center p-6 sm:p-12 md:w-1/2">
               <div className="w-full">
                 <h1 className="mb-4 text-xl font-semibold text-gray-700">
-                  Create account
+                  {translations.create_account}
                 </h1>
-                <label className="block text-sm">
-                  <span className="text-gray-700">Email</span>
+
+                <div className="flex flex-row justify-between">
+                  <label className="block text-sm">
+                    <span className="text-gray-700">
+                      {translations.first_name}
+                    </span>
+                    <span className="ms-2 text-red-700">*</span>
+                    <input
+                      name="firstname"
+                      onChange={(e) => setFirstname(e.target.value)}
+                      className="block w-full mt-1 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
+                      placeholder="Jane"
+                      autoFocus={true}
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="text-gray-700">
+                      {translations.last_name}
+                    </span>
+                    <span className="ms-2 text-red-700">*</span>
+                    <input
+                      name="lastname"
+                      onChange={(e) => setLastname(e.target.value)}
+                      className="block w-full mt-1 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
+                      placeholder="Doe"
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-row justify-between mt-4">
+                  <label className="block text-sm w-full">
+                    <span className="text-gray-700">
+                      {translations.phone_number}
+                    </span>
+                    <span className="ms-2 text-red-700">*</span>
+
+                    <div className="flex flex-row justify-between mt-1">
+                      <select
+                        name="countryCode"
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        className="block w-1/3 me-2 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
+                      >
+                        {countries.map((item) => (
+                          <option key={item.name} value={item.dial_code}>
+                            {item.code} {item.dial_code}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        name="phoneNumber"
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="block w-2/3 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
+                        placeholder="790101010"
+                        maxLength={12}
+                      />
+                    </div>
+                  </label>
+                </div>
+
+                <label className="block text-sm mt-4">
+                  <span className="text-gray-700">{translations.email}</span>
+                  <span className="ms-2 text-red-700">*</span>
+
                   <input
+                    name="email"
                     onChange={(e) => setEmail(e.target.value)}
                     className="block w-full mt-1 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
                     placeholder="janedoe@example.com"
@@ -95,17 +190,10 @@ const RegisterPage = (props) => {
                 </label>
 
                 <label className="block mt-4 text-sm">
-                  <span className="text-gray-700">Username</span>
+                  <span className="text-gray-700">{translations.password}</span>
+                  <span className="ms-2 text-red-700">*</span>
                   <input
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="block w-full mt-1 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
-                    placeholder="Jane Doe"
-                  />
-                </label>
-
-                <label className="block mt-4 text-sm">
-                  <span className="text-gray-700">Password</span>
-                  <input
+                    name="password"
                     onChange={(e) => setPassword(e.target.value)}
                     className="block w-full mt-1 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
                     placeholder="***************"
@@ -114,7 +202,10 @@ const RegisterPage = (props) => {
                 </label>
 
                 <label className="block mt-4 text-sm">
-                  <span className="text-gray-700">Confirm password</span>
+                  <span className="text-gray-700">
+                    {translations.confirm_password}
+                  </span>
+                  <span className="ms-2 text-red-700">*</span>
                   <input
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="block w-full mt-1 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
@@ -124,7 +215,22 @@ const RegisterPage = (props) => {
                 </label>
 
                 <label className="block mt-4 text-sm">
-                  <span className="text-gray-700">Account Type</span>
+                  <span className="text-gray-700">
+                    {translations.partner_code}
+                  </span>
+                  <input
+                    onChange={(e) => setPartnerCode(e.target.value)}
+                    className="block w-full mt-1 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
+                    placeholder={translations.partner_code}
+                    type="text"
+                  />
+                </label>
+
+                <label className="block mt-4 text-sm">
+                  <span className="text-gray-700">
+                    {translations.account_type}
+                  </span>
+                  <span className="ms-2 text-red-700">*</span>
                   <div className="w-full flex flex-row mt-1">
                     {ACCOUNT_TYPES.map((item, index) => (
                       <div
@@ -138,9 +244,9 @@ const RegisterPage = (props) => {
                             : "border-gray-600 bg-gray-100"
                         }`}
                       >
-                        <span>{`${item.name
-                          .charAt(0)
-                          .toUpperCase()}${item.name.slice(1)}`}</span>
+                        <span>{`${
+                          translations[`account_type_${item.name}`]
+                        }`}</span>
                       </div>
                     ))}
                   </div>
@@ -152,9 +258,12 @@ const RegisterPage = (props) => {
                       type="checkbox"
                       className="text-purple-600 form-checkbox bg-gray-400 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple focus:shadow-outline-gray"
                     />
-                    <span className="ml-2 text-gray-700">
-                      I agree to the{" "}
-                      <span className="underline">privacy policy</span>
+                    <span className="ms-2 text-gray-700">
+                      {translations.i_agree}{" "}
+                      <span className="underline">
+                        {translations.privacy_policy}
+                      </span>
+                      <span className="ms-2 text-red-700">*</span>
                     </span>
                   </label>
                 </div>
@@ -163,7 +272,7 @@ const RegisterPage = (props) => {
                   onClick={handleRegister}
                   className="block w-full px-4 py-2 mt-4 text-sm font-medium leading-5 text-center text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple"
                 >
-                  Create account
+                  {translations.create_account}
                 </button>
 
                 <hr className="my-8" />
@@ -173,7 +282,8 @@ const RegisterPage = (props) => {
                     className="text-sm font-medium text-purple-600 text-purple-400 hover:underline"
                     href="/dashboard/login"
                   >
-                    Already have an account? Login
+                    {translations.already_have_account}{" "}
+                    {translations.login_instead}
                   </a>
                 </p>
               </div>
@@ -184,30 +294,5 @@ const RegisterPage = (props) => {
     </ProtectedRoute>
   );
 };
-
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
-
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
-
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
-
-  const localizedPaths = getLocalizedPaths(pageContext);
-
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
 
 export default RegisterPage;

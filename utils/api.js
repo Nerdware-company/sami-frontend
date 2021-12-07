@@ -55,3 +55,17 @@ export async function getGlobalData(locale) {
   const global = await fetchAPI(`/global?_locale=${locale}`);
   return global;
 }
+
+// Get system wide settings from Strapi (pricing_per_user...)
+export async function getSystemSettings() {
+  const systemSettings = await fetchAPI(`/system-settings`);
+  return systemSettings;
+}
+
+// Get UI Translations from Strapi
+export async function getUITranslations(locale) {
+  const translations = await fetchAPI(
+    `/ui-translations?_locale=${locale || "en"}`
+  );
+  return translations;
+}

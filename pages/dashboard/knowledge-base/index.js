@@ -8,10 +8,10 @@ import { getLocalizedPaths } from "utils/localize";
 import ReactHtmlParser from "react-html-parser";
 import { parseCookies } from "nookies";
 
-const FaqListPage = () => {
+const FaqListPage = ({ global, translations }) => {
   const router = useRouter();
   const { user } = React.useContext(AuthContext);
-  const { jwt, id, username } = user;
+  const { jwt, id, firstname, lastname, phoneNumber } = user;
   const [faqs, setFaqs] = React.useState([]);
 
   const fetchFaqs = async () => {
@@ -45,11 +45,11 @@ const FaqListPage = () => {
 
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div>
           <div className="flex flex-row justify-between">
             <h3 className="text-gray-700 text-3xl font-medium">
-              Knowledge Base
+              {translations.knowledge_base}
             </h3>
           </div>
 
@@ -88,7 +88,7 @@ const FaqListPage = () => {
                               ...
                             </p>
                             <button className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2 text-center inline-flex items-center">
-                              Read more
+                              {translations.read_more}
                             </button>
                           </div>
                         </div>
@@ -103,30 +103,5 @@ const FaqListPage = () => {
     </ProtectedRoute>
   );
 };
-
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
-
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
-
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
-
-  const localizedPaths = getLocalizedPaths(pageContext);
-
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
 
 export default FaqListPage;

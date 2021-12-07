@@ -10,11 +10,11 @@ import axios from "axios";
 import moment from "moment";
 import { getStrapiMedia } from "utils/media";
 
-const TicketViewPage = () => {
+const TicketViewPage = ({ global, translations }) => {
   const router = useRouter();
   const ticketId = router.query.id.replace("ticket-", "");
   const { user } = React.useContext(AuthContext);
-  const { jwt, id, username } = user;
+  const { jwt, id, firstname, lastname, phoneNumber } = user;
   const inputFileRef = React.useRef();
   const [ticketData, setTicketData] = React.useState(null);
   const [message, setMessage] = React.useState("");
@@ -44,6 +44,11 @@ const TicketViewPage = () => {
   };
 
   const handleSubmitReply = async () => {
+    if (!message || message.length < 20) {
+      alert(translations.please_fill_all_fields);
+      return;
+    }
+
     let newReplies = [
       ...ticketData.replies,
       {
@@ -141,49 +146,46 @@ const TicketViewPage = () => {
 
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div>
           <div className="flex flex-row justify-between">
             <h3 className="text-gray-700 text-3xl font-medium">
-              Ticket #{ticketId}
+              {translations.ticket} #{ticketId}
             </h3>
-            {/* <a
-              href="/dashboard/subscriptions/create"
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Open New Ticket
-            </a> */}
           </div>
 
           <div className="flex flex-col mt-8">
             <div className="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
               {ticketData && ticketData.open ? (
                 <div>
-                  <label className="block text-left mb-4" style={{}}>
-                    <span className="text-gray-700">Reply</span>
+                  <label className="block text-start mb-4" style={{}}>
+                    <span className="text-gray-700">{translations.reply}</span>
                     <textarea
                       onChange={(e) => setMessage(e.target.value)}
                       value={message}
                       className="form-textarea mt-1 block w-full"
                       rows="3"
-                      placeholder="Type your reply"
+                      placeholder={translations.reply}
                     ></textarea>
                   </label>
                   <div className="mb-4">
-                    <span>Attached Files ({attachments.length})</span>
+                    <span>
+                      {translations.attached_files} ({attachments.length})
+                    </span>
                     {Array.from(attachments).map((item, index) => (
                       <div className="block" key={index}>
                         <a
                           href={URL.createObjectURL(item)}
                           target="_blank"
-                          className="text-sm text-gray-600" rel="noreferrer"
+                          className="text-sm text-gray-600"
+                          rel="noreferrer"
                         >
                           {item.name}
                         </a>
                       </div>
                     ))}
                   </div>
-                  <div>
+                  <div className="flex flex-row justify-between w-2/12">
                     <input
                       ref={inputFileRef}
                       className="hidden"
@@ -194,15 +196,15 @@ const TicketViewPage = () => {
                     />
                     <a
                       onClick={onAttachBtnClick}
-                      className="mr-2 cursor-pointer bg-blue-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                      className="me-2 cursor-pointer bg-blue-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
                     >
-                      Attach files
+                      {translations.attach_file}
                     </a>
                     <a
                       onClick={handleSubmitReply}
                       className="cursor-pointer bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
                     >
-                      Send reply
+                      {translations.send_reply}
                     </a>
                   </div>
                 </div>
@@ -222,9 +224,9 @@ const TicketViewPage = () => {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-bold">Ticket is closed</p>
+                      <p className="font-bold">{translations.ticket_closed}</p>
                       <p className="text-sm">
-                        You can't reply to this ticket because it is closed.
+                        {translations.ticket_closed_cant_reply}
                       </p>
                     </div>
                   </div>
@@ -241,7 +243,7 @@ const TicketViewPage = () => {
                     <tbody>
                       <tr className="flex flex-row">
                         <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider w-2/12">
-                          Date
+                          {translations.date}
                         </th>
 
                         <td className="bg-white w-10/12 px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
@@ -253,16 +255,20 @@ const TicketViewPage = () => {
                       </tr>
                       <tr className="flex flex-row">
                         <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider w-2/12">
-                          From
+                          {translations.from}
                         </th>
 
                         <td className="bg-white w-10/12 px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
-                          {item.isAdmin ? "Admin" : "You"}
+                          {item.isAdmin ? (
+                            <>{translations.support}</>
+                          ) : (
+                            <>{translations.you}</>
+                          )}
                         </td>
                       </tr>
                       <tr className="flex flex-row">
                         <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider w-2/12">
-                          Message
+                          {translations.message}
                         </th>
                         <td className="bg-white w-10/12 px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
                           {item.message}
@@ -271,7 +277,7 @@ const TicketViewPage = () => {
                       {item.attachments.length > 0 && (
                         <tr className="flex flex-row">
                           <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider w-2/12">
-                            Attachments
+                            {translations.attached_files}
                           </th>
                           <td className="bg-white w-10/12 px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
                             {Array.from(item.attachments).map((item, index) => (
@@ -283,7 +289,8 @@ const TicketViewPage = () => {
                                     : URL.createObjectURL(item)
                                 }
                                 target="_blank"
-                                className="text-sm text-gray-600 mr-2" rel="noreferrer"
+                                className="text-sm text-gray-600 mr-2"
+                                rel="noreferrer"
                               >
                                 {item.url
                                   ? item.url

@@ -7,34 +7,39 @@ import ProtectedRoute from "@/components/dashboard/ProtectedRoute";
 import { useRouter } from "next/router";
 import { getStrapiMedia } from "utils/media";
 
-const LoginPage = ({
-  sections,
-  metadata,
-  preview,
-  global,
-  translations,
-  pageContext,
-}) => {
+const ForgotPasswordPage = ({ global, translations }) => {
   const router = useRouter();
-  const { login, errors } = React.useContext(AuthContext);
+  const [email, setEmail] = React.useState("");
+  const [error, setError] = React.useState(false);
+  const [success, setSuccess] = React.useState(false);
 
-  const [email, setEmail] = React.useState();
-  const [password, setPassword] = React.useState();
+  const handleSendForgotPasswordEmail = async () => {
+    try {
+      const response = await fetch(getStrapiURL("/auth/forgot-password"), {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email,
+        }),
+      });
 
-  const handleLogin = async () => {
-    const credentials = {
-      identifier: email,
-      password,
-    };
+      const { status } = response;
+      const responseJSON = await response.json();
 
-    login(credentials);
+      if (status == 200) {
+        setError(false);
+        setSuccess(true);
+      } else {
+        setError(true);
+        setSuccess(false);
+      }
+    } catch (error) {
+      console.log("the error", error);
+    }
   };
-
-  const jwt = parseCookies(pageContext).jwt;
-
-  React.useEffect(() => {
-    console.log(errors);
-  }, [errors]);
 
   return (
     <ProtectedRoute router={router}>
@@ -44,7 +49,7 @@ const LoginPage = ({
             <div className="h-32 md:h-auto md:w-1/2">
               <img
                 aria-hidden="true"
-                className="object-contain w-full h-full LoginPagehidden"
+                className="object-contain w-full h-full ForgotPasswordPagehidden"
                 src={getStrapiMedia(global.ClientArea.loginImage.url)}
                 alt="Office"
               />
@@ -52,9 +57,9 @@ const LoginPage = ({
             <div className="flex items-center justify-center p-6 sm:p-12 md:w-1/2">
               <div className="w-full">
                 <h1 className="mb-4 text-xl font-semibold text-gray-700 ">
-                  {translations.login}
+                  {translations.forgot_password}
                 </h1>
-                {errors === "INVALID_CREDENTIALS" && (
+                {error && (
                   <div
                     className="my-10 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative"
                     role="alert"
@@ -63,32 +68,20 @@ const LoginPage = ({
                       {translations.warning}
                     </strong>
                     <span className="block">
-                      {translations.please_check_credentials}
+                      {translations.please_check_email}
                     </span>
                   </div>
                 )}
-                {errors === "USER_BLOCKED" && (
+                {success && (
                   <div
-                    className="my-10 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative"
-                    role="alert"
-                  >
-                    <strong className="font-bold">{translations.error}</strong>
-                    <span className="block">
-                      {" "}
-                      {translations.you_are_blocked}
-                    </span>
-                  </div>
-                )}
-                {errors === "USER_INACTIVE" && (
-                  <div
-                    className="my-10 bg-red-100 border border-yellow-400 text-yellow-500 px-4 py-3 rounded-lg relative"
+                    className="my-10 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative"
                     role="alert"
                   >
                     <strong className="font-bold">
-                      {translations.attention}
+                      {translations.success}
                     </strong>
                     <span className="block">
-                      {translations.you_are_inactive}
+                      {translations.you_received_password_reset_email}
                     </span>
                   </div>
                 )}
@@ -97,43 +90,30 @@ const LoginPage = ({
                   <input
                     onChange={(e) => setEmail(e.target.value)}
                     value={email}
-                    className="block w-full mt-1 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
+                    className="block w-full mt-2 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
                     placeholder="janedoe@example.com"
                   />
                 </label>
-                <label className="block mt-4 text-sm">
-                  <span className="text-gray-700 ">
-                    {translations.password}
-                  </span>
-                  <input
-                    onChange={(e) => setPassword(e.target.value)}
-                    value={password}
-                    className="block w-full mt-1 text-sm rounded-sm border-gray-600 bg-gray-100 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple form-input"
-                    placeholder="***************"
-                    type="password"
-                  />
-                </label>
-
                 <button
-                  onClick={handleLogin}
+                  onClick={handleSendForgotPasswordEmail}
                   className="block w-full px-4 py-2 mt-4 text-sm font-medium leading-5 text-center text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple"
                 >
-                  {translations.login}
+                  {translations.send_email}
                 </button>
 
                 <hr className="my-8" />
 
                 <p className="mt-4">
                   <a
-                    className="text-sm font-medium text-purple-600 LoginPagetext-purple-400 hover:underline"
-                    href="/dashboard/forgot-password"
+                    className="text-sm font-medium text-purple-600 ForgotPasswordPagetext-purple-400 hover:underline"
+                    href="/dashboard/login"
                   >
-                    {translations.forgot_password}
+                    {translations.login}
                   </a>
                 </p>
                 <p className="mt-1">
                   <a
-                    className="text-sm font-medium text-purple-600 LoginPagetext-purple-400 hover:underline"
+                    className="text-sm font-medium text-purple-600 ForgotPasswordPagetext-purple-400 hover:underline"
                     href="/dashboard/register"
                   >
                     {translations.create_account}
@@ -148,4 +128,4 @@ const LoginPage = ({
   );
 };
 
-export default LoginPage;
+export default ForgotPasswordPage;

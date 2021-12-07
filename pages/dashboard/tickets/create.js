@@ -6,12 +6,10 @@ import AuthContext from "store/authContext";
 import { getGlobalData, getStrapiURL } from "utils/api";
 import { getLocalizedPaths } from "utils/localize";
 
-const PRICING_USER_PER_MONTH = 5;
-
-const TicketCreatePage = () => {
+const TicketCreatePage = ({ global, translations }) => {
   const router = useRouter();
   const { user } = React.useContext(AuthContext);
-  const { jwt, id, username } = user;
+  const { jwt, id, firstname, lastname, phoneNumber } = user;
   const [services, setServices] = React.useState([]);
   // Validation Consts
   const [errors, setErrors] = React.useState({
@@ -21,7 +19,7 @@ const TicketCreatePage = () => {
   const [formValues, setFormValues] = React.useState({
     user: id,
     subject: "",
-    type: "",
+    type: "technical",
     message: "",
   });
 
@@ -44,6 +42,10 @@ const TicketCreatePage = () => {
   }
 
   const handleSubmitData = async () => {
+    if (!formState.subject || !formState.type || !formState.message) {
+      alert(translations.please_fill_all_fields);
+      return;
+    }
     const ticketCode = makeid(6);
     try {
       const response = await fetch(getStrapiURL(`/tickets`), {
@@ -80,44 +82,19 @@ const TicketCreatePage = () => {
     }
   };
 
-  const handleCalculateTotal = () => {
-    let calculatedSubtotal =
-      services
-        .filter((item) => formState.services.indexOf(item.id) > -1)
-        .reduce((partial_sum, arrayItem) => {
-          if (formState.paymentRecurrence === "YEARLY") {
-            return partial_sum + arrayItem.yearlyPrice;
-          } else {
-            return partial_sum + arrayItem.monthlyPrice;
-          }
-        }, 0) +
-      formState.numberOfUsers *
-        (formState.paymentRecurrence === "YEARLY"
-          ? PRICING_USER_PER_MONTH * 12
-          : PRICING_USER_PER_MONTH);
-
-    let discountPercentage =
-      formState.discountPercentage < 1 ? 1 : formState.discountPercentage / 100;
-
-    let calculatedTotal = calculatedSubtotal * discountPercentage;
-
-    setFormState("subtotal", calculatedSubtotal);
-    setFormState("total", calculatedTotal);
-  };
-
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div>
           <div className="flex flex-row justify-between">
             <h3 className="text-gray-700 text-3xl font-medium">
-              Open new ticket
+              {translations.create_ticket}
             </h3>
             <a
               onClick={handleSubmitData}
               className="cursor-pointer bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
             >
-              Create
+              {translations.create}
             </a>
           </div>
 
@@ -133,7 +110,7 @@ const TicketCreatePage = () => {
                             className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                             htmlFor="subject"
                           >
-                            Subject
+                            {translations.subject}
                           </label>
                           <div className="flex flex-row justify-between items-center">
                             <input
@@ -143,14 +120,14 @@ const TicketCreatePage = () => {
                               name="subject"
                               id="subject"
                               type="text"
-                              placeholder="Type ticket subject"
+                              placeholder={translations.subject}
                               className={`appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500 me-2
                               ${errors.subdomainExists && "border-red-500"}
                               `}
                             />
                           </div>
                           <p className="text-gray-600 text-xs italic">
-                            Subject for this ticket
+                            {translations.helper_subject_for_this_ticket}
                           </p>
                         </div>
                       </div>
@@ -161,7 +138,7 @@ const TicketCreatePage = () => {
                             className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                             htmlFor="type"
                           >
-                            Ticket Type
+                            {translations.type}
                           </label>
                           <select
                             onChange={(e) =>
@@ -171,11 +148,13 @@ const TicketCreatePage = () => {
                             id="type"
                             className="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                           >
-                            <option value="Technical">Technical</option>
-                            <option value="Sales">Sales</option>
+                            <option value="technical">
+                              {translations.technical}
+                            </option>
+                            <option value="sales">{translations.sales}</option>
                           </select>
                           <p className="text-gray-600 text-xs italic">
-                            Type for this ticket
+                            {translations.helper_type_for_this_ticket}
                           </p>
                         </div>
                       </div>
@@ -186,7 +165,7 @@ const TicketCreatePage = () => {
                             className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                             htmlFor="numberOfUsers"
                           >
-                            Message
+                            {translations.message}
                           </label>
                           <div className="flex flex-row justify-between items-center">
                             <textarea
@@ -196,7 +175,7 @@ const TicketCreatePage = () => {
                               value={formState.message}
                               className={`appearance-none form-textarea block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500`}
                               rows="3"
-                              placeholder="Type your reply"
+                              placeholder={translations.message}
                             ></textarea>
                           </div>
                         </div>
@@ -212,30 +191,5 @@ const TicketCreatePage = () => {
     </ProtectedRoute>
   );
 };
-
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
-
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
-
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
-
-  const localizedPaths = getLocalizedPaths(pageContext);
-
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
 
 export default TicketCreatePage;

@@ -10,11 +10,11 @@ import axios from "axios";
 import moment from "moment";
 import { getStrapiMedia } from "utils/media";
 
-const TicketViewPage = () => {
+const TicketViewPage = ({ global, translations }) => {
   const router = useRouter();
   const ticketId = router.query.id.replace("ticket-", "");
   const { user } = React.useContext(AuthContext);
-  const { jwt, id, username } = user;
+  const { jwt, id, firstname, lastname, phoneNumber } = user;
   const inputFileRef = React.useRef();
   const [ticketData, setTicketData] = React.useState(null);
   const [message, setMessage] = React.useState("");
@@ -191,7 +191,7 @@ const TicketViewPage = () => {
 
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div>
           <div className="flex flex-row justify-between">
             <h3 className="text-gray-700 text-3xl font-medium">
@@ -285,9 +285,9 @@ const TicketViewPage = () => {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-bold">Ticket is closed</p>
+                      <p className="font-bold">{translations.ticket_closed}</p>
                       <p className="text-sm">
-                        You can't reply to this ticket because it is closed.
+                        {translations.ticket_closed_cant_reply}
                       </p>
                     </div>
                   </div>
@@ -369,45 +369,4 @@ const TicketViewPage = () => {
   );
 };
 
-// export async function getStaticProps(context) {
-//   const { params, locale, locales, defaultLocale, preview = null } = context;
-
-//   const globalLocale = await getGlobalData(locale);
-//   // Fetch pages. Include drafts if preview mode is on
-
-//   const pageContext = {
-//     locales,
-//     defaultLocale,
-//     slug: "testing",
-//   };
-
-//   const localizedPaths = getLocalizedPaths(pageContext);
-
-//   return {
-//     props: {
-//       global: globalLocale,
-//       pageContext: {
-//         ...pageContext,
-//         localizedPaths,
-//       },
-//     },
-//   };
-// }
-
 export default TicketViewPage;
-
-// export const getStaticPaths = async () => {
-//   const res = await fetch(getStrapiURL("/tickets"));
-//   const data = await res.json();
-
-//   const paths = data.map((item) => {
-//     return {
-//       params: { id: `ticket-${item.code.toString()}` },
-//     };
-//   });
-
-//   return {
-//     paths,
-//     fallback: false,
-//   };
-// };

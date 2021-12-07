@@ -10,6 +10,7 @@ const AuthContext = createContext({
   login: () => {},
   logout: () => {},
   checkUser: () => {},
+  changeUserData: () => {},
   authReady: false,
   errors: [],
 });
@@ -17,7 +18,9 @@ const initialUser = {
   jwt: null,
   id: null,
   email: null,
-  username: null,
+  firstname: null,
+  lastname: null,
+  phoneNumber: null,
   confirmed: null,
   blocked: null,
   accountType: "",
@@ -27,7 +30,7 @@ export const AuthContextProvider = ({ children }) => {
   const [isLoadingWebsite, setIsLoadingWebsite] = React.useState(true);
   const [authReady, setAuthReady] = React.useState(false);
   const [user, setUser] = React.useState(initialUser);
-  const [errors, setErrors] = React.useState([]);
+  const [errors, setErrors] = React.useState();
 
   React.useEffect(() => {
     // Init "Strapi" identity connection
@@ -87,12 +90,23 @@ export const AuthContextProvider = ({ children }) => {
 
       if (status == 200) {
         const { jwt } = responseJSON;
+        let isUserActive = responseJSON.user.active;
+        let isUserBlocked = responseJSON.user.blocked;
+
+        if (!isUserActive) {
+          setErrors("USER_INACTIVE");
+          return;
+        }
 
         checkUser(jwt);
         Router.push("/dashboard");
       } else {
         const { message } = responseJSON;
-        setErrors(message[0].messages.map((i) => i.id));
+        if (message[0].messages[0].id === "Auth.form.error.blocked") {
+          setErrors("USER_BLOCKED");
+        } else {
+          setErrors("INVALID_CREDENTIALS");
+        }
       }
     } catch (error) {
       console.log("the error", error);
@@ -106,14 +120,25 @@ export const AuthContextProvider = ({ children }) => {
   };
 
   const handleSetUser = (jwt, userInfo) => {
-    const { id, email, username, confirmed, blocked, accountType, picture } =
-      userInfo;
+    const {
+      id,
+      email,
+      firstname,
+      lastname,
+      phoneNumber,
+      confirmed,
+      blocked,
+      accountType,
+      picture,
+    } = userInfo;
 
     setUser({
       jwt,
       id,
       email,
-      username,
+      firstname,
+      lastname,
+      phoneNumber,
       confirmed,
       blocked,
       accountType,
@@ -124,6 +149,7 @@ export const AuthContextProvider = ({ children }) => {
   const context = {
     user: user,
     login: login,
+    setUser: setUser,
     checkUser: checkUser,
     logout: logout,
     errors: errors,

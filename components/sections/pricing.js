@@ -3,19 +3,9 @@ import { parseCookies } from "nookies";
 import React from "react";
 import { getStrapiURL } from "utils/api";
 
-const PRICING_USER_PER_MONTH = 5;
-const PAYMENT_RECURRENCE_OPTIONS = {
-  monthly: {
-    id: "monthly",
-    multiplicationFactor: 1,
-  },
-  yearly: {
-    id: "yearly",
-    multiplicationFactor: 12,
-  },
-};
-const Pricing = ({ data }) => {
+const Pricing = ({ data, translations, system }) => {
   const router = useRouter();
+  const { pricing_user_month, pricing_user_year } = system;
   const [services, setServices] = React.useState([]);
   // Validation Consts
   const [errors, setErrors] = React.useState({
@@ -27,7 +17,7 @@ const Pricing = ({ data }) => {
     subdomain: "",
     coupon_code: "",
     numberOfUsers: 1,
-    paymentRecurrence: PAYMENT_RECURRENCE_OPTIONS.monthly.id,
+    paymentRecurrence: "MONTHLY",
     subTotal: 0.0,
     total: 0.0,
     discount: null,
@@ -77,13 +67,13 @@ const Pricing = ({ data }) => {
     return setFormState("numberOfUsers", val);
   };
 
-  const handleChooseService = (serviceId) => {
-    setFormState("services", [...formState.services, serviceId]);
+  const handleChooseService = (service_code) => {
+    setFormState("services", [...formState.services, service_code]);
   };
 
-  const handleRemoveService = (serviceId) => {
+  const handleRemoveService = (service_code) => {
     setFormState("services", [
-      ...formState.services.filter((item) => item !== serviceId),
+      ...formState.services.filter((item) => item !== service_code),
     ]);
   };
 
@@ -151,30 +141,36 @@ const Pricing = ({ data }) => {
   };
 
   const handleCalculateTotal = () => {
-    let calculatedSubtotal =
-      services
-        .filter((item) => formState.services.indexOf(item.id) > -1)
-        .reduce((partial_sum, arrayItem) => {
-          switch (formState.paymentRecurrence) {
-            case PAYMENT_RECURRENCE_OPTIONS.monthly.id:
-              return partial_sum + arrayItem.monthlyPrice;
-            case PAYMENT_RECURRENCE_OPTIONS.yearly.id:
-              return partial_sum + arrayItem.yearlyPrice;
-          }
-        }, 0) +
-      formState.numberOfUsers *
-        (formState.paymentRecurrence === PAYMENT_RECURRENCE_OPTIONS.monthly.id
-          ? PRICING_USER_PER_MONTH
-          : PRICING_USER_PER_MONTH *
-            PAYMENT_RECURRENCE_OPTIONS.yearly.multiplicationFactor);
+    let userPricing =
+      formState.paymentRecurrence === "MONTHLY"
+        ? pricing_user_month
+        : pricing_user_year;
 
     let discountPercentage =
       formState.discount < 1 ? 1 : formState.discount / 100;
 
-    let calculatedTotal = calculatedSubtotal * discountPercentage;
+    let calculateSubTotal =
+      services
+        .filter((item) => formState.services.indexOf(item.service_code) > -1)
+        .reduce((partial_sum, arrayItem) => {
+          switch (formState.paymentRecurrence) {
+            case "MONTHLY":
+              return partial_sum + arrayItem.monthlyPrice;
+            case "YEARLY":
+              return partial_sum + arrayItem.yearlyPrice;
+          }
+        }, 0) +
+      formState.numberOfUsers * userPricing;
 
-    setFormState("subTotal", calculatedSubtotal);
-    setFormState("total", calculatedTotal);
+    let calculateTotal = calculateSubTotal * discountPercentage;
+
+    if (
+      (formState.services.length > 0 && formState.paymentRecurrence) ||
+      formState.numberOfUsers > 0
+    ) {
+      setFormState("subTotal", calculateSubTotal);
+      setFormState("total", calculateTotal);
+    }
   };
 
   React.useEffect(() => {
@@ -207,7 +203,7 @@ const Pricing = ({ data }) => {
                         className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                         htmlFor="paymentRecurrence"
                       >
-                        Payment Recurrance
+                        {translations.payment_recurrence}
                       </label>
                       <select
                         onChange={(e) =>
@@ -217,14 +213,13 @@ const Pricing = ({ data }) => {
                         id="paymentRecurrence"
                         className="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                       >
-                        {Object.values(PAYMENT_RECURRENCE_OPTIONS).map(
-                          (item) => (
-                            <option value={item.id}>{item.id}</option>
-                          )
-                        )}
+                        <option value={"MONTHLY"}>
+                          {translations.monthly}
+                        </option>
+                        <option value={"YEARLY"}>{translations.yearly}</option>
                       </select>
                       <p className="text-gray-600 text-xs italic">
-                        Payment Recurrence for this subscription
+                        {translations.helper_recurrence_for_this_subscription}
                       </p>
                     </div>
                   </div>
@@ -235,7 +230,7 @@ const Pricing = ({ data }) => {
                         className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                         htmlFor="numberOfUsers"
                       >
-                        Number of Users
+                        {translations.number_of_users}
                       </label>
                       <div className="flex flex-row justify-between items-center">
                         <input
@@ -251,21 +246,22 @@ const Pricing = ({ data }) => {
                           className="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500 me-2"
                         />
                         <span className="block w-full py-3 mb-3">
-                          {formState.paymentRecurrence ===
-                          PAYMENT_RECURRENCE_OPTIONS.monthly.id
-                            ? PRICING_USER_PER_MONTH
-                            : PRICING_USER_PER_MONTH *
-                              PAYMENT_RECURRENCE_OPTIONS.yearly
-                                .multiplicationFactor}{" "}
-                          USD / User /{" "}
-                          {formState.paymentRecurrence ===
-                          PAYMENT_RECURRENCE_OPTIONS.monthly.id
-                            ? "Month"
-                            : "Year"}
+                          $
+                          {formState.paymentRecurrence === "MONTHLY"
+                            ? pricing_user_month
+                            : pricing_user_year}{" "}
+                          / User /{" "}
+                          {formState.paymentRecurrence === "MONTHLY" ? (
+                            <>{translations.monthly}</>
+                          ) : (
+                            <>{translations.yearly}</>
+                          )}
                         </span>
                       </div>
                       <p className="text-gray-600 text-xs italic">
-                        Number of users for this subscription
+                        {
+                          translations.helper_number_of_users_for_this_subscription
+                        }
                       </p>
                     </div>
                   </div>
@@ -276,12 +272,14 @@ const Pricing = ({ data }) => {
                         <div
                           key={service.id}
                           onClick={
-                            formState.services.indexOf(service.id) === -1
-                              ? () => handleChooseService(service.id)
-                              : () => handleRemoveService(service.id)
+                            formState.services.indexOf(service.service_code) ===
+                            -1
+                              ? () => handleChooseService(service.service_code)
+                              : () => handleRemoveService(service.service_code)
                           }
                           className={`mb-2 flex cursor-pointer border-2 ${
-                            formState.services.indexOf(service.id) > -1
+                            formState.services.indexOf(service.service_code) >
+                            -1
                               ? " bg-primary-200 border-primary-700"
                               : " bg-primary-50 border-gray-500"
                           } rounded p-5 justify-between items-center`}
@@ -301,17 +299,17 @@ const Pricing = ({ data }) => {
                               <div>
                                 <span className="text-gray-500">$</span>{" "}
                                 <span className="text-3xl">
-                                  {formState.paymentRecurrence ===
-                                  PAYMENT_RECURRENCE_OPTIONS.monthly.id
+                                  {formState.paymentRecurrence === "MONTHLY"
                                     ? service.monthlyPrice
                                     : service.yearlyPrice}{" "}
                                 </span>{" "}
                                 <span className="text-gray-500">
                                   /{" "}
-                                  {formState.paymentRecurrence ===
-                                  PAYMENT_RECURRENCE_OPTIONS.monthly.id
-                                    ? "Month"
-                                    : "Year"}
+                                  {formState.paymentRecurrence === "MONTHLY" ? (
+                                    <>{translations.monthly}</>
+                                  ) : (
+                                    <>{translations.yearly}</>
+                                  )}
                                 </span>
                               </div>
                             </div>
@@ -323,7 +321,9 @@ const Pricing = ({ data }) => {
                   </div>
                 </div>
                 <div className="sm:w-8/12 md:w-4/12 flex flex-col justify-start items-center">
-                  <h6 className="text-black font-medium">Order summary</h6>
+                  <h6 className="text-black font-medium">
+                    {translations.order_summary}
+                  </h6>
                   <div
                     className="
                 flex
@@ -334,7 +334,9 @@ const Pricing = ({ data }) => {
                 border-b-2 border-gray-200
               "
                   >
-                    <p className="text-gray-400 ml-4">Subtotal</p>
+                    <p className="text-gray-400 ml-4">
+                      {translations.subtotal}
+                    </p>
                     <p className="text-black mr-4">${formState.subTotal}</p>
                   </div>
                   {formState.discount && (
@@ -349,7 +351,7 @@ const Pricing = ({ data }) => {
                             ${formState.discount > 0 && "bg-blue-100"}
                           `}
                     >
-                      <p className={`ml-4`}>Discount</p>
+                      <p className={`ml-4`}>{translations.discount}</p>
                       <p
                         className={`mr-4
                          ${formState.discount > 0 && "text-red-500"}
@@ -368,9 +370,10 @@ const Pricing = ({ data }) => {
                 py-5
               "
                   >
-                    <p className="text-gray-400 ml-4">Total</p>
+                    <p className="text-gray-400 ml-4">{translations.total}</p>
                     <p className="text-indigo-600 mr-4">
-                      ${formState.total} Billed {formState.paymentRecurrence}
+                      ${formState.total} {translations.billed}{" "}
+                      {translations[formState.paymentRecurrence?.toLowerCase()]}
                     </p>
                   </div>
 
@@ -386,14 +389,15 @@ const Pricing = ({ data }) => {
                   >
                     <a
                       target="_blank"
-                      href={`/dashboard/subscriptions/create?services=${formState.services
-                        .map((a) => JSON.stringify(a))
-                        .join()}&numberOfUsers=${
+                      href={`/dashboard/subscriptions/create?services=${formState.services.join(
+                        ","
+                      )}&numberOfUsers=${
                         formState.numberOfUsers
                       }&paymentRecurrence=${formState.paymentRecurrence}`}
-                      className={`text-center w-full button  text-white px-2 py-2 rounded-md bg-indigo-600`} rel="noreferrer"
+                      className={`text-center w-full button  text-white px-2 py-2 rounded-md bg-indigo-600`}
+                      rel="noreferrer"
                     >
-                      Buy Now
+                      {translations.subscribe_now}
                     </a>
                   </div>
                 </div>

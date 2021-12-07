@@ -1,7 +1,7 @@
 import React from "react";
 
 export default function dropDownButton(props) {
-  const { options } = props;
+  const { buttonName, options } = props;
   const [open, setOpen] = React.useState(false);
 
   const toggleDropDown = () => {
@@ -20,12 +20,12 @@ export default function dropDownButton(props) {
   };
 
   return (
-    <div className="">
+    <div className="text-start">
       <button
         onClick={toggleDropDown}
         className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
       >
-        Pay
+        {buttonName}
       </button>
 
       <div
@@ -37,7 +37,7 @@ export default function dropDownButton(props) {
       ></div>
 
       <div
-        className="absolute right-0 mt-1 mr-2 border border-gray-300 w-auto bg-white rounded-lg shadow-xl overflow-x-hidden z-10"
+        className="absolute mt-1 border border-gray-300 w-auto bg-white rounded-lg shadow-xl overflow-x-hidden z-10"
         style={{
           display: open ? "block" : "none",
           widows: open ? 200 : 0,

@@ -8,15 +8,15 @@ import { getLocalizedPaths } from "utils/localize";
 import querystring from "querystring";
 import axios from "axios";
 
-const TicketListPage = () => {
+const TicketListPage = ({ global, translations }) => {
   const router = useRouter();
   const { user } = React.useContext(AuthContext);
-  const { jwt, id, username } = user;
+  const { jwt, id, firstname, lastname, phoneNumber } = user;
   const [subscriptions, setSubscriptions] = React.useState([]);
 
   const fetchSubscriptions = async () => {
     try {
-      const response = await fetch(getStrapiURL(`/tickets/?user.id=${id}`), {
+      const response = await fetch(getStrapiURL(`/tickets?user.id=${id}`), {
         method: "GET",
         headers: {
           Accept: "application/json",
@@ -43,17 +43,17 @@ const TicketListPage = () => {
 
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div>
           <div className="flex flex-row justify-between">
             <h3 className="text-gray-700 text-3xl font-medium">
-              Your Support Tickets
+              {translations.support_tickets}
             </h3>
             <a
               href="/dashboard/tickets/create"
               className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
             >
-              Open New Ticket
+              {translations.create_ticket}
             </a>
           </div>
 
@@ -63,20 +63,20 @@ const TicketListPage = () => {
                 <table className="min-w-full">
                   <thead>
                     <tr>
-                      <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-                        Ticket Code
+                      <th className="px-6 py-3 border-b border-gray-200 bg-gray-50  text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.ticket_code}
                       </th>
-                      <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-                        Subject
+                      <th className="px-6 py-3 border-b border-gray-200 bg-gray-50  text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.subject}
                       </th>
-                      <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-                        Type
+                      <th className="px-6 py-3 border-b border-gray-200 bg-gray-50  text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.type}
                       </th>
-                      <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-                        Latest Reply
+                      <th className="px-6 py-3 border-b border-gray-200 bg-gray-50  text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.latest_reply}
                       </th>
-                      <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                      <th className="px-6 py-3 border-b border-gray-200 bg-gray-50  text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                        {translations.status}
                       </th>
                       <th className="px-6 py-3 border-b border-gray-200 bg-gray-50"></th>
                     </tr>
@@ -86,11 +86,11 @@ const TicketListPage = () => {
                     {subscriptions.length === 0 && (
                       <tr>
                         <td
-                          className="px-6 py-4 whitespace-no-wrap border-b border-gray-200"
+                          className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200"
                           colSpan={12}
                         >
                           <div className="text-sm text-center leading-5 font-medium text-gray-900">
-                            You dont have any tickets
+                            {translations.you_dont_have_tickets}
                           </div>
                         </td>
                       </tr>
@@ -100,46 +100,48 @@ const TicketListPage = () => {
                       .sort((a, b) => b.id - a.id)
                       .map((item) => (
                         <tr key={item.id}>
-                          <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
+                          <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200">
                             <div className="text-sm leading-5 font-medium text-gray-900">
                               {item.code}
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
+                          <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200">
                             <div className="text-sm leading-5 font-medium text-gray-900">
                               {item.subject}
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
-                            {item.type}
+                          <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
+                            {translations[item.type]}
                           </td>
 
-                          <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
-                            {item.replies[item.replies.length - 1].isAdmin
-                              ? "Admin"
-                              : "You"}
+                          <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
+                            {item.replies[item.replies.length - 1].isAdmin ? (
+                              <>{translations.support}</>
+                            ) : (
+                              <>{translations.you}</>
+                            )}
                           </td>
 
-                          <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
+                          <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200">
                             {item.open ? (
                               <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                Open
+                                {translations.open}
                               </span>
                             ) : (
                               <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                Closed
+                                {translations.closed}
                               </span>
                             )}
                           </td>
 
-                          <td className="px-6 py-4 whitespace-no-wrap text-right border-b border-gray-200 text-sm leading-5 font-medium">
+                          <td className="text-center px-6 py-4 whitespace-no-wrap text-right border-b border-gray-200 text-sm leading-5 font-medium">
                             <a
                               href={`/dashboard/tickets/ticket-${item.code.toString()}`}
                               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
                             >
-                              View
+                              {translations.view}
                             </a>
                           </td>
                         </tr>
@@ -154,30 +156,5 @@ const TicketListPage = () => {
     </ProtectedRoute>
   );
 };
-
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
-
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
-
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
-
-  const localizedPaths = getLocalizedPaths(pageContext);
-
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
 
 export default TicketListPage;

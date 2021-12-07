@@ -10,11 +10,11 @@ import axios from "axios";
 
 const capitalize = (s) => (s && s[0].toUpperCase() + s.slice(1)) || "";
 
-const SupportTicketListPage = () => {
+const SupportTicketListPage = ({ global, translations }) => {
   const router = useRouter();
   const supportTypeId = capitalize(router.query.id);
   const { user } = React.useContext(AuthContext);
-  const { jwt, id, username } = user;
+  const { jwt, id, firstname, lastname, phoneNumber } = user;
   const [subscriptions, setSubscriptions] = React.useState([]);
 
   const fetchTickets = async () => {
@@ -49,7 +49,7 @@ const SupportTicketListPage = () => {
 
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div>
           <div className="flex flex-row justify-between">
             <h3 className="text-gray-700 text-3xl font-medium">
@@ -90,7 +90,7 @@ const SupportTicketListPage = () => {
                           colSpan={12}
                         >
                           <div className="text-sm text-center leading-5 font-medium text-gray-900">
-                            You dont have any tickets
+                            {translations.you_dont_have_tickets}
                           </div>
                         </td>
                       </tr>
@@ -155,36 +155,4 @@ const SupportTicketListPage = () => {
   );
 };
 
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
-
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
-
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
-
-  const localizedPaths = getLocalizedPaths(pageContext);
-
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
-
 export default SupportTicketListPage;
-
-export const getStaticPaths = async (context) => {
-  return {
-    paths: [{ params: { id: "technical" } }, { params: { id: "sales" } }],
-    fallback: true,
-  };
-};

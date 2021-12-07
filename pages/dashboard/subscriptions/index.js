@@ -7,48 +7,16 @@ import { getGlobalData, getStrapiURL } from "utils/api";
 import { getLocalizedPaths } from "utils/localize";
 import querystring from "querystring";
 import DropDownButton from "@/components/elements/dropDownButton";
+import Link from "next/link";
+import countries from "utils/countries";
 
-const SubscriptionListPage = () => {
+const SubscriptionListPage = ({ global, translations }) => {
   const router = useRouter();
   const { user } = React.useContext(AuthContext);
-  const { jwt, id: loggedInUserId, username } = user;
+  const { jwt, id: loggedInUserId } = user;
   const [subscriptions, setSubscriptions] = React.useState([]);
-  // const tap = Tapjsli("pk_test_L9gp7txMN3kcPWUwny1oEj8Y");
-  // const elements = tap.elements({});
-  // const style = {
-  //   base: {
-  //     color: "#535353",
-  //     lineHeight: "18px",
-  //     fontFamily: "sans-serif",
-  //     fontSmoothing: "antialiased",
-  //     fontSize: "16px",
-  //     "::placeholder": {
-  //       color: "rgba(0, 0, 0, 0.26)",
-  //       fontSize: "15px",
-  //     },
-  //   },
-  //   invalid: {
-  //     color: "red",
-  //   },
-  // };
-  // // input labels/placeholders
-  // const labels = {
-  //   cardNumber: "Card Number",
-  //   expirationDate: "MM/YY",
-  //   cvv: "CVV",
-  //   cardHolder: "Card Holder Name",
-  // };
-  // //payment options
-  // const paymentOptions = {
-  //   currencyCode: ["KWD", "USD", "SAR"],
-  //   labels: labels,
-  //   TextDirection: "ltr",
-  // };
-  // //create element, pass style and payment options
-  // const card = elements.create("card", { style: style }, paymentOptions);
-
   const fetchSubscriptions = async () => {
-    let string = `[owner.id]=${loggedInUserId}&_where[_or][1][partner.id]=${loggedInUserId}`;
+    let string = `[owner.id]=${loggedInUserId}&_where[_or][1][owner.partner.id]=${loggedInUserId}`;
     try {
       const response = await fetch(
         getStrapiURL(`/subscriptions/?_where[_or][0]${string}`),
@@ -74,26 +42,71 @@ const SubscriptionListPage = () => {
     }
   };
 
-  const handlePay = () => {
+  const handlePay = (itemToSell, typeOfPayment) => {
+    let validUntill =
+      itemToSell.paymentRecurrence === "MONTHLY"
+        ? new Date(
+            new Date(Date.now()).setDate(new Date(Date.now()).getDate() + 30)
+          ).getTime()
+        : new Date(
+            new Date(Date.now()).setDate(new Date(Date.now()).getDate() + 365)
+          ).getTime();
+
+    let serviceCodes = itemToSell.services
+      .map((item) => item.service_code)
+      .join(",");
+    let serviceIds = itemToSell.services.map((item) => item.id).join(",");
+
+    let extractedCountryCode = countries.filter(
+      (item) => ~itemToSell.owner.phoneNumber.indexOf(item.dial_code)
+    )[0].dial_code;
+
+    let phoneNumberWithoutCountryCode = itemToSell.owner.phoneNumber.replace(
+      extractedCountryCode,
+      ""
+    );
+
+    let dataToSend = {
+      // Quota Info
+      type_of_payment: typeOfPayment,
+      service_codes: serviceCodes,
+      service_ids: serviceIds,
+      valid_untill: validUntill,
+
+      // Subscription Info
+      id: itemToSell.id,
+      subdomain: itemToSell.subdomain,
+      company_name: itemToSell.title,
+      subtotal: parseFloat(itemToSell.subTotal),
+      discount: itemToSell.discount ? itemToSell.discount : 0,
+      total: parseFloat(itemToSell.total),
+      number_of_users: itemToSell.numberOfUsers,
+
+      // Owner Info
+      email: itemToSell.owner.email,
+      first_name: itemToSell.owner.firstname,
+      last_name: itemToSell.owner.lastname,
+    };
+
     goSell.config({
       gateway: {
         publicKey: "pk_test_L9gp7txMN3kcPWUwny1oEj8Y",
-        merchantId: null,
         language: "en",
-        contactInfo: true,
+        contactInfo: false,
         supportedCurrencies: "all",
-        supportedPaymentMethods: [
-          "AMERICAN_EXPRESS",
-          "MADA",
-          "VISA",
-          "MASTERCARD",
-          "FAWRY",
-        ],
+        supportedPaymentMethods: "all",
+        // supportedPaymentMethods: [
+        //   "AMERICAN_EXPRESS",
+        //   "MADA",
+        //   "VISA",
+        //   "MASTERCARD",
+        //   "FAWRY",
+        // ],
         saveCardOption: false,
         customerCards: true,
         notifications: "standard",
         callback: (response) => {
-          console.log("response", response);
+          console.log("response of callback", response);
         },
         onClose: () => {
           console.log("onClose Event");
@@ -128,44 +141,44 @@ const SubscriptionListPage = () => {
         },
       },
       customer: {
-        id: null,
-        first_name: "First Name",
-        email: "demo@email.com",
+        first_name: dataToSend.first_name,
+        middle_name: "",
+        last_name: dataToSend.last_name,
+        email: dataToSend.email,
+        phone: {
+          country_code: extractedCountryCode,
+          number: phoneNumberWithoutCountryCode,
+        },
       },
       order: {
-        amount: 100,
-        currency: "KWD",
+        amount: dataToSend.total,
+        currency: "USD",
         items: [
           {
-            id: 1,
-            name: "item1",
-            description: "item1 desc",
+            id: 0,
+            name: `TOP1ERP Fees for subscription ID ${dataToSend.id}`,
+            description: `Fees for subscription ID ${dataToSend.id}`,
             quantity: "1",
-            amount_per_unit: "00.000",
-            total_amount: "000.000",
+            amount_per_unit: 0,
+            total_amount: dataToSend.total,
           },
         ],
-        shipping: null,
-        taxes: null,
       },
       transaction: {
         mode: "charge",
         charge: {
+          auto: {
+            time: 100,
+            type: "VOID",
+          },
+          metadata: {
+            ...dataToSend,
+          },
+          description: `Fees for subscription ID ${dataToSend.id}`,
+          statement_descriptor: "statement_descriptor",
           saveCard: false,
           threeDSecure: true,
-          description: "Test Description",
-          statement_descriptor: "Sample",
-          reference: {
-            transaction: "txn_0001",
-            order: "ord_0001",
-          },
-          hashstring: "",
-          metadata: {},
-          receipt: {
-            email: false,
-            sms: true,
-          },
-          redirect: "http://127.0.0.1:3000/redirect_url",
+          redirect: `http://127.0.0.1:3000/dashboard/payment/verify`,
           post: null,
         },
       },
@@ -173,38 +186,38 @@ const SubscriptionListPage = () => {
     goSell.openLightBox();
   };
 
-  const handleCreateBankTransferInvoice = async (subData) => {
-    let dataToSubmit = {
-      subscription: subData.id,
-      total: subData.total,
-      subTotal: subData.subTotal,
-      discount: subData.discount,
-      status: "pending",
-      paymentType: "banktransfer",
-    };
+  // const handleCreateBankTransferInvoice = async (subData) => {
+  //   let dataToSubmit = {
+  //     subscription: subData.id,
+  //     total: subData.total,
+  //     subTotal: subData.subTotal,
+  //     discount: subData.discount,
+  //     status: "pending",
+  //     paymentType: "banktransfer",
+  //   };
 
-    try {
-      const response = await fetch(getStrapiURL(`/invoices`), {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${jwt}`,
-        },
-        body: JSON.stringify(dataToSubmit),
-      });
+  //   try {
+  //     const response = await fetch(getStrapiURL(`/invoices`), {
+  //       method: "POST",
+  //       headers: {
+  //         Accept: "application/json",
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${jwt}`,
+  //       },
+  //       body: JSON.stringify(dataToSubmit),
+  //     });
 
-      const { status } = response;
+  //     const { status } = response;
 
-      if (status == 200) {
-        router.push("/dashboard/invoices");
-      } else {
-        console.log(response);
-      }
-    } catch (error) {
-      console.log("the error", error);
-    }
-  };
+  //     if (status == 200) {
+  //       router.push("/dashboard/invoices");
+  //     } else {
+  //       console.log(response);
+  //     }
+  //   } catch (error) {
+  //     console.log("the error", error);
+  //   }
+  // };
 
   React.useEffect(() => {
     fetchSubscriptions();
@@ -247,17 +260,19 @@ const SubscriptionListPage = () => {
 
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div className="flex flex-row justify-between">
           <h3 className="text-gray-700 text-3xl font-medium">
-            Your Subscriptions
+            {translations.my_subscriptions}
           </h3>
-          <a
-            href="/dashboard/subscriptions/create"
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Create
-          </a>
+          <Link href="/dashboard/subscriptions/create">
+            <a
+              href="/dashboard/subscriptions/create"
+              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+            >
+              {translations.create_new}
+            </a>
+          </Link>
         </div>
 
         {/* <form id="form-container" method="post" action="/charge">
@@ -282,23 +297,29 @@ const SubscriptionListPage = () => {
               <table className="min-w-full">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-                      Owner
+                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                      {translations.owner}
                     </th>
-                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-                      Subdomain
+                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                      {translations.subdomain}
                     </th>
-                    {/* <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                    {/* <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
                         Services
                       </th> */}
-                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-                      Total
+                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                      {translations.total}
                     </th>
-                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-                      Payment Recurrence
+                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                      {translations.payment_recurrence}
                     </th>
-                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                      {translations.status}
+                    </th>
+                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                      {translations.last_payment}
+                    </th>
+                    <th className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
+                      {translations.next_payment}
                     </th>
                     <th className="px-6 py-3 border-b border-gray-200 bg-gray-50"></th>
                     <th className="px-6 py-3 border-b border-gray-200 bg-gray-50"></th>
@@ -313,139 +334,155 @@ const SubscriptionListPage = () => {
                         colSpan={12}
                       >
                         <div className="text-sm text-center leading-5 font-medium text-gray-900">
-                          You dont have any subscriptions
+                          {translations.you_dont_have_subscriptions}
                         </div>
                       </td>
                     </tr>
                   )}
-                  {subscriptions.map((item) => (
-                    <tr key={item.id}>
-                      <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                        <div className="text-sm leading-5 font-medium text-gray-900">
-                          {item.owner.id === loggedInUserId ? (
-                            "You"
-                          ) : (
-                            <a
-                              href={`/customers/${item.owner.id}`}
-                              className="text-blue-400 underline"
-                            >
-                              {item.owner.username}
-                            </a>
-                          )}
-                        </div>
-                      </td>
+                  {subscriptions.map((item) => {
+                    let lastInvoice = item.invoices
+                      .filter((invoice) => invoice.status === "paid")
+                      .map(function (e) {
+                        return e.paidDate;
+                      })
+                      .sort()
+                      .reverse()[0];
 
-                      <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                        <div className="text-sm leading-5 font-medium text-gray-900">
-                          {item.subdomain}.geekware.com
-                        </div>
-                      </td>
+                    let hasPaidInvoice =
+                      item.invoices.filter(
+                        (invoice) => invoice.status === "paid"
+                      ).length > 0;
 
-                      {/* <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                          <div className="grid grid-cols-2">
-                            {item.services.map((service, i) => (
-                              <div
-                                key={`user-${item.id}-${service.id}`}
-                                className={`flex flex-row  ${
-                                  item.services.length > 1 &&
-                                  i < item.services.length - 1 &&
-                                  "me-1"
-                                }`}
-                              >
-                                <div className="flex items-start">
-                                  <div className="flex-shrink-0 me-2">
-                                    <img
-                                      className="h-6 w-6 rounded-full"
-                                      src={getStrapiURL(service.picture.url)}
-                                      alt=""
-                                    />
-                                  </div>
-                                  <div
-                                    className={`text-sm leading-5 text-gray-900`}
-                                  >
-                                    {service.title}{" "}
-                                    <span className="text-xs text-gray-400">
-                                      (
-                                      {item.paymentRecurrence === "YEARLY"
-                                        ? service.yearlyPrice
-                                        : service.monthlyPrice}{" "}
-                                      USD)
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                    let lastPaidInvoiceDate = new Date(
+                      lastInvoice
+                    ).toDateString();
+
+                    let nextPaymentDate =
+                      item.paymentRecurrence === "MONTHLY"
+                        ? new Date(
+                            new Date(lastInvoice).setDate(
+                              new Date(lastInvoice).getDate() + 30
+                            )
+                          )
+                        : new Date(
+                            new Date(lastInvoice).setDate(
+                              new Date(lastInvoice).getDate() + 365
+                            )
+                          );
+                    return (
+                      <tr key={item.id}>
+                        <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200">
+                          <div className="text-sm leading-5 font-medium text-gray-900">
+                            {item.owner.id === loggedInUserId ? (
+                              "You"
+                            ) : (
+                              <>{item.owner.email}</>
+                            )}
                           </div>
-                        </td> */}
+                        </td>
 
-                      <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
-                        {item.total}&nbsp;USD&nbsp;
-                        {item.discount > 0 && (
-                          <span className="text-xs text-red-500">
-                            ({item.discount}%)
-                          </span>
-                        )}
-                      </td>
+                        <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200">
+                          <div className="text-sm leading-5 font-medium text-gray-900">
+                            {item.subdomain}.top1erp.com
+                          </div>
+                        </td>
 
-                      <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
-                        {item.paymentRecurrence}
-                      </td>
+                        <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
+                          ${item.total}&nbsp;
+                          {item.discount > 0 && (
+                            <span className="text-xs text-red-500">
+                              ({item.discount}%)
+                            </span>
+                          )}
+                        </td>
 
-                      <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                        {item.active ? (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Active
-                          </span>
-                        ) : (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                            Activated within 24hrs
-                          </span>
-                        )}
-                      </td>
+                        <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
+                          {translations[item.paymentRecurrence?.toLowerCase()]}
+                        </td>
 
-                      <td className="px-6 py-4 whitespace-no-wrap text-right border-b border-gray-200 text-sm leading-5 font-medium">
-                        <a
-                          href={`/dashboard/subscriptions/${item.id}`}
-                          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                        >
-                          View Subscription
-                        </a>
-                      </td>
-                      <td className="px-6 py-4 whitespace-no-wrap text-right border-b border-gray-200 text-sm leading-5 font-medium">
-                        {new Date(item.expires_at) < Date.now() && (
-                          <DropDownButton
-                            options={[
-                              {
-                                text: "Credit Card",
-                                action: () => {
-                                  // handlePay(item);
-                                },
-                              },
-                              {
-                                text: "Crypto Currency",
-                                action: () => {},
-                              },
-                              {
-                                text: "Bank Transfer",
-                                action: () => {
-                                  handleCreateBankTransferInvoice(item);
-                                },
-                              },
-                            ]}
-                          />
-                        )}
-                      </td>
-                      {/* 
-                        <td className="px-6 py-4 whitespace-no-wrap text-right border-b border-gray-200 text-sm leading-5 font-medium">
-                          <a
-                            href="#"
-                            className="text-indigo-600 hover:text-indigo-900"
+                        <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200">
+                          {item.active ? (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              Activated within 24hrs
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200">
+                          {hasPaidInvoice ? (
+                            <>{lastPaidInvoiceDate}</>
+                          ) : (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              Data Unavailable
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200">
+                          {hasPaidInvoice ? (
+                            <>{nextPaymentDate.toDateString()}</>
+                          ) : (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              Data Unavailable
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="flex flex-row justify-between text-center px-6 py-4 border-b border-gray-200 text-sm leading-5 font-medium">
+                          <Link
+                            href={`/dashboard/subscriptions/${item.id}/edit`}
                           >
-                            Edit
-                          </a>
-                        </td> */}
-                    </tr>
-                  ))}
+                            <a
+                              href={`/dashboard/subscriptions/${item.id}/edit`}
+                              className="bg-yellow-300 hover:bg-yellow-400 me-2 text-white font-bold py-2 px-4 rounded"
+                            >
+                              <span>{translations.edit}</span>
+                            </a>
+                          </Link>
+                          <Link href={`/dashboard/subscriptions/${item.id}`}>
+                            <a
+                              href={`/dashboard/subscriptions/${item.id}`}
+                              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                            >
+                              {translations.view}
+                            </a>
+                          </Link>
+                        </td>
+                        <td className="text-center px-6 py-4 border-b border-gray-200 text-sm leading-5 font-medium">
+                          {(nextPaymentDate < Date.now() || !lastInvoice) && (
+                            <DropDownButton
+                              buttonName={translations.pay_subscription}
+                              options={[
+                                {
+                                  text: translations.credit_card,
+                                  action: () => {
+                                    handlePay(
+                                      item,
+                                      lastInvoice ? "UPDATE" : "CREATE"
+                                    );
+                                  },
+                                },
+                                {
+                                  text: translations.crypto_currency,
+                                  action: () => {},
+                                },
+                                {
+                                  text: translations.bank_transfer,
+                                  action: () => {
+                                    // handleCreateBankTransferInvoice(item);
+                                  },
+                                },
+                              ]}
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -455,30 +492,5 @@ const SubscriptionListPage = () => {
     </ProtectedRoute>
   );
 };
-
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
-
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
-
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
-
-  const localizedPaths = getLocalizedPaths(pageContext);
-
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
 
 export default SubscriptionListPage;

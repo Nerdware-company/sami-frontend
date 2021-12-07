@@ -4,26 +4,14 @@ import { useRouter } from "next/router";
 import { parseCookies } from "nookies";
 import React from "react";
 import AuthContext from "store/authContext";
-import { getGlobalData, getStrapiURL } from "utils/api";
-import { getLocalizedPaths } from "utils/localize";
+import { getStrapiURL } from "utils/api";
 
-const PRICING_USER_PER_MONTH = 5;
-const PAYMENT_RECURRENCE_OPTIONS = {
-  monthly: {
-    id: "monthly",
-    multiplicationFactor: 1,
-  },
-  yearly: {
-    id: "yearly",
-    multiplicationFactor: 12,
-  },
-};
-
-const SubscriptionViewPage = () => {
+const SubscriptionViewPage = ({ global, translations }) => {
   const router = useRouter();
   const subscriptionId = router.query.id;
   const { user } = React.useContext(AuthContext);
-  const { jwt, id: loggedInUserId, username } = user;
+  const { jwt, id: loggedInUserId, firstname, lastname, phoneNumber } = user;
+  const [services, setServices] = React.useState([]);
 
   const [subscription, setSubscription] = React.useState({
     title: null,
@@ -39,10 +27,35 @@ const SubscriptionViewPage = () => {
     owner: loggedInUserId,
   });
 
+  const fetchServices = async () => {
+    try {
+      const response = await fetch(
+        getStrapiURL(`/services?_locale=${parseCookies().NEXT_LOCALE || "en"}`),
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const { status } = response;
+      const responseJSON = await response.json();
+
+      if (status == 200) {
+        setServices(responseJSON);
+      } else {
+      }
+    } catch (error) {
+      console.log("the error", error);
+    }
+  };
+
   const fetchSubscription = async () => {
     try {
       const response = await fetch(
-        getStrapiURL(`/subscriptions/?id=${subscriptionId}`),
+        getStrapiURL(`/subscriptions?id=${subscriptionId}`),
         {
           method: "GET",
           headers: {
@@ -65,16 +78,17 @@ const SubscriptionViewPage = () => {
   };
 
   React.useEffect(() => {
+    fetchServices();
     fetchSubscription();
   }, []);
 
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div>
           <div className="flex flex-row justify-between">
             <h3 className="text-gray-700 text-3xl font-medium">
-              View Subscription
+              {translations.view_subscription}
             </h3>
             {/* <a className="cursor-pointer bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
               Save
@@ -90,18 +104,13 @@ const SubscriptionViewPage = () => {
                       <div className="flex flex-wrap -mx-3 mb-6 max-w-lg">
                         <div className="w-full px-3">
                           <span className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-                            Owner
+                            {translations.owner}
                           </span>
                           <div className="flex flex-row justify-between items-center">
                             {subscription.owner.id === loggedInUserId ? (
-                              "You"
+                              <>{translations.you}</>
                             ) : (
-                              <a
-                                href={`/customers/${subscription.owner.id}`}
-                                className="text-blue-500 underline"
-                              >
-                                {subscription.owner.username}
-                              </a>
+                              <>{subscription.owner.email}</>
                             )}
                           </div>
                         </div>
@@ -110,7 +119,7 @@ const SubscriptionViewPage = () => {
                       <div className="flex flex-wrap -mx-3 mb-6 max-w-lg">
                         <div className="w-full px-3">
                           <span className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-                            Title
+                            {translations.title}
                           </span>
                           <div className="flex flex-row justify-between items-center">
                             {subscription.title}
@@ -121,10 +130,10 @@ const SubscriptionViewPage = () => {
                       <div className="flex flex-wrap -mx-3 mb-6 max-w-lg">
                         <div className="w-full px-3">
                           <span className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-                            SUBDOMAIN
+                            {translations.subdomain}
                           </span>
                           <div className="flex flex-row justify-between items-center">
-                            {subscription.subdomain}.geekware.com
+                            {subscription.subdomain}.top1erp.com
                           </div>
                         </div>
                       </div>
@@ -132,59 +141,74 @@ const SubscriptionViewPage = () => {
                       <div className="flex flex-wrap -mx-3 mb-6 max-w-lg">
                         <div className="w-full px-3">
                           <span className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-                            PAYMENT RECCURANCE
+                            {translations.payment_recurrence}
                           </span>
                           <div className="flex flex-row justify-between items-center">
-                            {subscription.paymentRecurrence}
+                            {
+                              translations[
+                                subscription.paymentRecurrence?.toLowerCase()
+                              ]
+                            }
                           </div>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap -mx-3 mb-2">
                         <div className="w-full md:w-8/12 md:flex md:flex-nowrap md:flex-row md:items-start gap-2 px-3 mb-6 md:mb-0">
-                          {subscription.services.map((service) => (
-                            <div
-                              key={service.id}
-                              className={`mb-2 flex border-2 bg-primary-50 border-gray-500 rounded p-5 justify-between items-center`}
-                            >
-                              <div className="flex justify-start gap-5 items-center me-2">
-                                <div className="w-20 h-20 rounded-lg">
-                                  <img
-                                    className="object-contain w-20 h-20"
-                                    src={getStrapiURL(service.picture.url)}
-                                    alt={service.title}
-                                  />
-                                </div>
-                                <div>
-                                  <h1 className="font-bold tracking-wider text-gray-700">
-                                    {service.title}
-                                  </h1>
+                          {services
+                            .filter(
+                              (item) =>
+                                subscription.services.map(function (e) {
+                                  return e.service_code;
+                                })[0] === item.service_code
+                            )
+                            .map((service) => (
+                              <div
+                                key={service.id}
+                                className={`mb-2 flex border-2 bg-primary-50 border-gray-500 rounded p-5 justify-between items-center`}
+                              >
+                                <div className="flex justify-start gap-5 items-center me-2">
+                                  <div className="w-20 h-20 rounded-lg">
+                                    <img
+                                      className="object-contain w-20 h-20"
+                                      src={getStrapiURL(service.picture.url)}
+                                      alt={service.title}
+                                    />
+                                  </div>
                                   <div>
-                                    <span className="text-gray-500">$</span>{" "}
-                                    <span className="text-3xl">
-                                      {subscription.paymentRecurrence ===
-                                      PAYMENT_RECURRENCE_OPTIONS.monthly.id
-                                        ? service.monthlyPrice
-                                        : service.yearlyPrice}{" "}
-                                    </span>{" "}
-                                    <span className="text-gray-500">
-                                      /{" "}
-                                      {subscription.paymentRecurrence ===
-                                      PAYMENT_RECURRENCE_OPTIONS.monthly.id
-                                        ? "Month"
-                                        : "Year"}
-                                    </span>
+                                    <h1 className="font-bold tracking-wider text-gray-700">
+                                      {service.title}
+                                    </h1>
+                                    <div>
+                                      <span className="text-gray-500">$</span>{" "}
+                                      <span className="text-3xl">
+                                        {subscription.paymentRecurrence ===
+                                        "MONTHLY"
+                                          ? service.monthlyPrice
+                                          : service.yearlyPrice}{" "}
+                                      </span>{" "}
+                                      <span className="text-gray-500">
+                                        /{" "}
+                                        {subscription.paymentRecurrence ===
+                                        "MONTHLY" ? (
+                                          <>{translations.monthly}</>
+                                        ) : (
+                                          <>{translations.yearly}</>
+                                        )}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
                         </div>
                         <div className="w-full md:w-4/12 px-3 mb-6 md:mb-0"></div>
                       </div>
                     </div>
                     <div className="sm:w-8/12 md:w-4/12 flex flex-col justify-start items-center">
-                      <h6 className="text-black font-medium">Order summary</h6>
+                      <h6 className="text-black font-medium">
+                        {translations.order_summary}
+                      </h6>
                       <div
                         className="
                 flex
@@ -195,7 +219,9 @@ const SubscriptionViewPage = () => {
                 border-b-2 border-gray-200
               "
                       >
-                        <p className="text-gray-400 ml-4">Subtotal</p>
+                        <p className="text-gray-400 ml-4">
+                          {translations.subtotal}
+                        </p>
                         <p className="text-black mr-4">
                           $ {subscription.subTotal}
                         </p>
@@ -210,7 +236,7 @@ const SubscriptionViewPage = () => {
                             border-b-2 border-gray-200
                           `}
                       >
-                        <p className={`ml-4`}>Discount</p>
+                        <p className={`ml-4`}>{translations.discount}</p>
                         <p
                           className={`mr-4
                          `}
@@ -228,10 +254,16 @@ const SubscriptionViewPage = () => {
                 border-b-2 border-gray-200
               "
                       >
-                        <p className="text-gray-400 ml-4">Total</p>
+                        <p className="text-gray-400 ml-4">
+                          {translations.total}
+                        </p>
                         <p className="text-indigo-600 mr-4">
-                          ${subscription.total} Billed{" "}
-                          {subscription.paymentRecurrence}
+                          ${subscription.total} {translations.billed}{" "}
+                          {
+                            translations[
+                              subscription.paymentRecurrence?.toLowerCase()
+                            ]
+                          }
                         </p>
                       </div>
 
@@ -250,12 +282,14 @@ const SubscriptionViewPage = () => {
                             className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                             htmlFor="couponCode"
                           >
-                            Coupon Code
+                            {translations.coupon_code}
                           </label>
                           <span>
-                            {subscription.coupon
-                              ? subscription.coupon.code
-                              : "EMPTY"}
+                            {subscription.coupon ? (
+                              subscription.coupon
+                            ) : (
+                              <>{translations.empty}</>
+                            )}
                           </span>
                         </div>
                       </div>

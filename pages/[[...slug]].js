@@ -1,16 +1,32 @@
 import ErrorPage from "next/error";
-import { getPageData, fetchAPI, getGlobalData } from "utils/api";
+import {
+  getPageData,
+  fetchAPI,
+  getGlobalData,
+  getUITranslations,
+  getSystemSettings,
+} from "utils/api";
 import Sections from "@/components/sections";
 import Seo from "@/components/elements/seo";
 import { useRouter } from "next/router";
 import Layout from "@/components/layout";
 import { getLocalizedPaths } from "utils/localize";
+import { parseCookies } from "nookies";
+import React from "react";
 
 // The file is called [[...slug]].js because we're using Next's
 // optional catch all routes feature. See the related docs:
 // https://nextjs.org/docs/routing/dynamic-routes#optional-catch-all-routes
 
-const DynamicPage = ({ sections, metadata, preview, global, pageContext }) => {
+const DynamicPage = ({
+  sections,
+  metadata,
+  preview,
+  global,
+  translations,
+  system,
+  pageContext,
+}) => {
   const router = useRouter();
 
   // Check if the required data was provided
@@ -28,7 +44,12 @@ const DynamicPage = ({ sections, metadata, preview, global, pageContext }) => {
       {/* Add meta tags for SEO*/}
       <Seo metadata={metadata} />
       {/* Display content sections */}
-      <Sections sections={sections} preview={preview} />
+      <Sections
+        translations={translations}
+        system={system}
+        sections={sections}
+        preview={preview}
+      />
     </Layout>
   );
 };
@@ -84,12 +105,19 @@ export async function getServerSideProps(context) {
 
   const localizedPaths = getLocalizedPaths(pageContext);
 
+  const systemSettings = await getSystemSettings();
+  const translations = await getUITranslations(
+    parseCookies(context).NEXT_LOCALE
+  );
+
   return {
     props: {
       preview,
       sections: contentSections,
       metadata,
       global: globalLocale,
+      translations: translations,
+      system: systemSettings,
       pageContext: {
         ...pageContext,
         localizedPaths,

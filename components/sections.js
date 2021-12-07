@@ -29,7 +29,7 @@ const sectionComponents = {
 };
 
 // Display a section individually
-const Section = ({ sectionData }) => {
+const Section = ({ sectionData, translations, system }) => {
   // Prepare the component
   const SectionComponent = sectionComponents[sectionData.__component];
 
@@ -38,7 +38,13 @@ const Section = ({ sectionData }) => {
   }
 
   // Display the section
-  return <SectionComponent data={sectionData} />;
+  return (
+    <SectionComponent
+      translations={translations}
+      system={system}
+      data={sectionData}
+    />
+  );
 };
 
 const PreviewModeBanner = () => {
@@ -63,7 +69,7 @@ const PreviewModeBanner = () => {
 };
 
 // Display the list of sections
-const Sections = ({ sections, preview }) => {
+const Sections = ({ sections, translations, system, preview }) => {
   return (
     <div className="flex flex-col">
       {/* Show a banner if preview mode is on */}
@@ -71,6 +77,8 @@ const Sections = ({ sections, preview }) => {
       {/* Show the actual sections */}
       {sections.map((section) => (
         <Section
+          translations={translations}
+          system={system}
           sectionData={section}
           key={`${section.__component}${section.id}`}
         />

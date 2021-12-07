@@ -15,7 +15,7 @@ import { getStrapiMedia } from "utils/media";
 
 const links = [
   {
-    title: "Dashboard",
+    title: "dashboard",
     path: "/dashboard",
     icon: (props) => <ViewGridIcon className={props.classes} />,
   },
@@ -32,41 +32,41 @@ const links = [
     acl: ["support"],
   },
   {
-    title: "My Customers",
+    title: "my_customers",
     path: "/dashboard/customers",
     icon: (props) => <UsersIcon className={props.classes} />,
     acl: ["accountant", "partner"],
   },
   {
-    title: "My Subscriptions",
+    title: "my_subscriptions",
     path: "/dashboard/subscriptions",
     icon: (props) => <CollectionIcon className={props.classes} />,
     acl: ["customer", "accountant", "partner"],
   },
   {
-    title: "Invoices",
+    title: "invoices",
     path: "/dashboard/invoices",
     icon: (props) => <DocumentReportIcon className={props.classes} />,
     acl: ["customer", "accountant", "partner"],
   },
   {
-    title: "Support Tickets",
+    title: "support_tickets",
     path: "/dashboard/tickets",
     icon: (props) => <MailIcon className={props.classes} />,
     acl: ["customer", "accountant", "partner"],
   },
   {
-    title: "Knowledge Base",
+    title: "knowledge_base",
     path: "/dashboard/knowledge-base",
     icon: (props) => <InformationCircleIcon className={props.classes} />,
     acl: ["customer", "accountant", "partner"],
   },
 ];
 
-export default function LayoutSidebar({ children }) {
+function LayoutSidebar({ children, global, translations }) {
   const router = useRouter();
   const { user, logout } = React.useContext(AuthContext);
-  const { username, accountType } = user;
+  const { firstname, lastname, accountType } = user;
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [notificationOpen, setNotificationOpen] = React.useState(false);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
@@ -123,12 +123,8 @@ export default function LayoutSidebar({ children }) {
           <div className="flex items-center">
             <img
               className="h-12"
-              src={getStrapiMedia("erponelogo_54b888850f.png")}
+              src={getStrapiMedia(global.Dashboard.logo.url)}
             />
-
-            {/* <span className="text-gray-500 dark:text-white text-opacity-75 text-3xl mx-2 font-semibold">
-              Dashboard
-            </span> */}
           </div>
         </div>
 
@@ -156,7 +152,7 @@ export default function LayoutSidebar({ children }) {
                     })}
 
                   <span className="ms-3 group-hover:ms-4 transition-all">
-                    {link.title}
+                    {translations[link.title]}
                   </span>
                 </a>
               </Link>
@@ -194,14 +190,26 @@ export default function LayoutSidebar({ children }) {
               </svg>
             </button>
 
-            <div className="relative mx-4 lg:mx-0">
+            <div className="relative mx-4 lg:mx-0 flex justify-between">
               <span className="text-gray-700 font-semibold uppercase me-2">
-                Account type
+                {translations.account_type}
               </span>
-              <span className="text-primary-500 font-medium border border-dashed border-primary-500 rounded px-2">
-                {user.accountType.charAt(0).toUpperCase() +
-                  user.accountType.slice(1)}
+              <span
+                className={`text-primary-500 font-medium border border-dashed border-primary-500 rounded px-2 ${
+                  user.accountType === "partner" ||
+                  user.accountType === "accountant"
+                    ? "me-2"
+                    : ""
+                }`}
+              >
+                {translations[`account_type_${user.accountType}`]}
               </span>
+              {(user.accountType === "partner" ||
+                user.accountType === "accountant") && (
+                <span className="text-primary-500 font-medium border border-dashed border-primary-500 rounded px-2">
+                  CODE: PARTNER-{user.id}
+                </span>
+              )}
             </div>
 
             {/* <div className="relative mx-4 lg:mx-0">
@@ -266,7 +274,9 @@ export default function LayoutSidebar({ children }) {
                       alt="Your avatar"
                     />
                   </div>
-                  <b>{username}</b>
+                  <b>
+                    {firstname} {lastname}
+                  </b>
                 </a>
               </div>
 
@@ -283,19 +293,19 @@ export default function LayoutSidebar({ children }) {
                   href="/dashboard/profile"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-600 hover:text-white"
                 >
-                  My Account
+                  {translations.my_account}
                 </a>
                 <a
                   onClick={handleLogout}
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-600 hover:text-white cursor-pointer"
                 >
-                  Logout
+                  {translations.logout}
                 </a>
               </div>
             </div>
 
             {/* NOTIFICATIONS */}
-            <div className="relative">
+            {/* <div className="relative">
               <button
                 onClick={toggleNotification}
                 className="flex ms-4 text-gray-600 focus:outline-none"
@@ -325,7 +335,7 @@ export default function LayoutSidebar({ children }) {
               ></div>
 
               <div
-                className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl overflow-hidden z-10"
+                className="absolute end-0 mt-2 w-80 bg-white rounded-lg shadow-xl overflow-hidden z-10"
                 style={{
                   display: notificationOpen ? "block" : "none",
                   widows: notificationOpen ? 200 : 0,
@@ -344,7 +354,8 @@ export default function LayoutSidebar({ children }) {
                   </p>
                 </a>
               </div>
-            </div>
+            </div> */}
+            <div className="mx-4"></div>
           </div>
         </header>
 
@@ -358,3 +369,5 @@ export default function LayoutSidebar({ children }) {
     </div>
   );
 }
+
+export default LayoutSidebar;

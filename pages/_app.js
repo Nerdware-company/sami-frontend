@@ -1,15 +1,14 @@
+import React from "react";
 import App from "next/app";
 import Head from "next/head";
 import ErrorPage from "next/error";
 import Router from "next/router";
 import { DefaultSeo } from "next-seo";
 import { getStrapiMedia } from "utils/media";
-import { getGlobalData } from "utils/api";
+import { getGlobalData, getSystemSettings, getUITranslations } from "utils/api";
 import { parseCookies } from "nookies";
-import "@/styles/index.css";
-// import "@tap-payments/gosell/dist/assets/css/notifications.css";
 import { AuthContextProvider } from "store/authContext";
-import React from "react";
+import "@/styles/index.css";
 
 const MyApp = ({ Component, pageProps }) => {
   // Extract the data we need
@@ -82,11 +81,17 @@ MyApp.getInitialProps = async (appContext) => {
   // Calls page's `getInitialProps` and fills `appProps.pageProps`
   const appProps = await App.getInitialProps(appContext);
   const globalLocale = await getGlobalData(appContext.router.locale);
+  const systemSettings = await getSystemSettings();
+  const translations = await getUITranslations(
+    parseCookies(appContext.ctx).NEXT_LOCALE
+  );
 
   return {
     ...appProps,
     pageProps: {
       global: globalLocale,
+      system: systemSettings,
+      translations: translations,
     },
   };
 };

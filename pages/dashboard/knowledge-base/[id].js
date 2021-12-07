@@ -8,12 +8,13 @@ import { getLocalizedPaths } from "utils/localize";
 import moment from "moment";
 import { getStrapiMedia } from "utils/media";
 import ReactHtmlParser from "react-html-parser";
+import { parseCookies } from "nookies";
 
-const FaqViewPage = () => {
+const FaqViewPage = ({ global, translations }) => {
   const router = useRouter();
   const faqId = router.query.id;
   const { user } = React.useContext(AuthContext);
-  const { jwt, id, username } = user;
+  const { jwt, id, firstname, lastname, phoneNumber } = user;
   const [faqData, setFaqData] = React.useState({
     subject: "",
     content: "",
@@ -21,15 +22,21 @@ const FaqViewPage = () => {
   });
 
   const fetchFaqData = async () => {
+    let string = parseCookies().NEXT_LOCALE
+      ? `&_locale=${parseCookies().NEXT_LOCALE}`
+      : "";
     try {
-      const response = await fetch(getStrapiURL(`/faqs/?id=${faqId}`), {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${jwt}`,
-        },
-      });
+      const response = await fetch(
+        getStrapiURL(`/faqs/?id=${faqId}${string}`),
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jwt}`,
+          },
+        }
+      );
 
       const { status } = response;
       const responseJSON = await response.json();
@@ -48,7 +55,7 @@ const FaqViewPage = () => {
 
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div>
           <div className="w-12/12 px-10 my-4 py-6 bg-white rounded-lg shadow-md">
             <div className="flex justify-between items-center">
@@ -100,45 +107,4 @@ const FaqViewPage = () => {
   );
 };
 
-// export async function getStaticProps(context) {
-//   const { params, locale, locales, defaultLocale, preview = null } = context;
-
-//   const globalLocale = await getGlobalData(locale);
-//   // Fetch pages. Include drafts if preview mode is on
-
-//   const pageContext = {
-//     locales,
-//     defaultLocale,
-//     slug: "testing",
-//   };
-
-//   const localizedPaths = getLocalizedPaths(pageContext);
-
-//   return {
-//     props: {
-//       global: globalLocale,
-//       pageContext: {
-//         ...pageContext,
-//         localizedPaths,
-//       },
-//     },
-//   };
-// }
-
 export default FaqViewPage;
-
-// export const getStaticPaths = async () => {
-//   const res = await fetch(getStrapiURL("/faqs"));
-//   const data = await res.json();
-
-//   const paths = data.map((item) => {
-//     return {
-//       params: { id: `${item.id.toString()}` },
-//     };
-//   });
-
-//   return {
-//     paths,
-//     fallback: false,
-//   };
-// };

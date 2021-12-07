@@ -7,22 +7,13 @@ import AuthContext from "store/authContext";
 import { getGlobalData, getStrapiURL } from "utils/api";
 import { getLocalizedPaths } from "utils/localize";
 
-const PRICING_USER_PER_MONTH = 5;
-const PAYMENT_RECURRENCE_OPTIONS = {
-  monthly: {
-    id: "monthly",
-    multiplicationFactor: 1,
-  },
-  yearly: {
-    id: "yearly",
-    multiplicationFactor: 12,
-  },
-};
-const SubscriptionCreatePage = () => {
+const SubscriptionCreatePage = ({ global, translations, system }) => {
   const router = useRouter();
+  const { pricing_user_month, pricing_user_year } = system;
   const { user } = React.useContext(AuthContext);
-  const { jwt, id: loggedInUserId, username } = user;
+  const { jwt, id: loggedInUserId, firstname, lastname, phoneNumber } = user;
   const [services, setServices] = React.useState([]);
+  const [partneredUsers, setPartneredUsers] = React.useState([]);
   // Validation Consts
   const [errors, setErrors] = React.useState({
     subdomainExists: false,
@@ -33,11 +24,11 @@ const SubscriptionCreatePage = () => {
     subdomain: "",
     coupon_code: "",
     numberOfUsers: 1,
-    paymentRecurrence: PAYMENT_RECURRENCE_OPTIONS.monthly.id,
+    paymentRecurrence: "MONTHLY",
     subTotal: 0.0,
     total: 0.0,
     discount: null,
-    active: true,
+    active: false,
     services: [],
     coupon: null,
     owner: loggedInUserId,
@@ -69,6 +60,32 @@ const SubscriptionCreatePage = () => {
 
       if (status == 200) {
         setServices(responseJSON);
+      } else {
+      }
+    } catch (error) {
+      console.log("the error", error);
+    }
+  };
+
+  const fetchPartneredUsers = async () => {
+    try {
+      const response = await fetch(
+        getStrapiURL(`/users?partner.id=${loggedInUserId}`),
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jwt}`,
+          },
+        }
+      );
+
+      const { status } = response;
+      const responseJSON = await response.json();
+
+      if (status == 200) {
+        setPartneredUsers(responseJSON);
       } else {
       }
     } catch (error) {
@@ -141,14 +158,19 @@ const SubscriptionCreatePage = () => {
 
       if (status == 200) {
         if (responseJSON.length > 0) {
+          let couponActive = responseJSON[0].active;
           let validUntil = responseJSON[0].validUntil;
           let validUntilUnix = new Date(validUntil).getTime();
           let currentUnixTime = Date.now().toString();
           if (currentUnixTime > validUntilUnix) {
             alert("Coupon has expired");
             return;
+          } else if (!couponActive) {
+            alert("Coupon not active");
+            return;
           }
           setFormState("discount", responseJSON[0].discountPercentage);
+          setFormState("coupon", responseJSON[0].code);
         }
       } else {
       }
@@ -157,8 +179,52 @@ const SubscriptionCreatePage = () => {
     }
   };
 
+  const handleCalculateTotal = () => {
+    let userPricing =
+      formState.paymentRecurrence === "MONTHLY"
+        ? pricing_user_month
+        : pricing_user_year;
+
+    let discountPercentage =
+      formState.discount < 1 ? 1 : formState.discount / 100;
+
+    let calculateSubTotal =
+      services
+        .filter((item) => formState.services.indexOf(item.service_code) > -1)
+        .reduce((partial_sum, arrayItem) => {
+          switch (formState.paymentRecurrence) {
+            case "MONTHLY":
+              return partial_sum + arrayItem.monthlyPrice;
+            case "YEARLY":
+              return partial_sum + arrayItem.yearlyPrice;
+          }
+        }, 0) +
+      formState.numberOfUsers * userPricing;
+
+    let calculateTotal = calculateSubTotal * discountPercentage;
+
+    if (
+      (formState.services.length > 0 && formState.paymentRecurrence) ||
+      formState.numberOfUsers > 0
+    ) {
+      setFormState("subTotal", calculateSubTotal);
+      setFormState("total", calculateTotal);
+    }
+  };
+
   const handleSubmitData = async () => {
     const dataToSubmit = formState;
+
+    if (
+      !formState.title ||
+      !formState.subdomain ||
+      !formState.paymentRecurrence ||
+      formState.numberOfUsers < 1 ||
+      formState.services.length < 1
+    ) {
+      alert(translations.please_fill_all_fields);
+      return;
+    }
 
     for (var key in dataToSubmit) {
       if (dataToSubmit.hasOwnProperty(key)) {
@@ -166,7 +232,11 @@ const SubscriptionCreatePage = () => {
       }
     }
 
-    // return console.log(dataToSubmit);
+    dataToSubmit.services = dataToSubmit.services.map((item) => {
+      return services.filter(
+        (secondItem) => secondItem.service_code === item
+      )[0].id;
+    });
 
     try {
       const response = await fetch(getStrapiURL(`/subscriptions`), {
@@ -180,7 +250,6 @@ const SubscriptionCreatePage = () => {
       });
 
       const { status } = response;
-      // const responseJSON = await response.json();
 
       if (status == 200) {
         router.push("/dashboard/subscriptions");
@@ -192,42 +261,8 @@ const SubscriptionCreatePage = () => {
     }
   };
 
-  const handleCalculateTotal = () => {
-    let calculatedSubtotal =
-      services
-        .filter((item) => formState.services.indexOf(item.id) > -1)
-        .reduce((partial_sum, arrayItem) => {
-          switch (formState.paymentRecurrence) {
-            case PAYMENT_RECURRENCE_OPTIONS.monthly.id:
-              return partial_sum + arrayItem.monthlyPrice;
-            case PAYMENT_RECURRENCE_OPTIONS.yearly.id:
-              return partial_sum + arrayItem.yearlyPrice;
-          }
-        }, 0) +
-      formState.numberOfUsers *
-        (formState.paymentRecurrence === PAYMENT_RECURRENCE_OPTIONS.monthly.id
-          ? PRICING_USER_PER_MONTH
-          : PRICING_USER_PER_MONTH *
-            PAYMENT_RECURRENCE_OPTIONS.yearly.multiplicationFactor);
-
-    let discountPercentage =
-      formState.discount < 1 ? 1 : formState.discount / 100;
-
-    let calculatedTotal = calculatedSubtotal * discountPercentage;
-
-    if (
-      formState.services.length > 0 &&
-      formState.numberOfUsers > 0 &&
-      formState.paymentRecurrence
-    ) {
-      console.log("all good");
-      console.log(calculatedSubtotal);
-      setFormState("subTotal", calculatedSubtotal);
-      setFormState("total", calculatedTotal);
-    }
-  };
-
   React.useEffect(() => {
+    fetchPartneredUsers();
     fetchServices();
   }, []);
 
@@ -249,9 +284,7 @@ const SubscriptionCreatePage = () => {
     if (router.query.services) {
       let queryPaymentRecurrence = router.query.paymentRecurrence;
       let queryNumberOfUsers = router.query.numberOfUsers;
-      let queryServices = router.query.services
-        .split(",")
-        .map((i) => Number(i));
+      let queryServices = router.query.services.split(",");
       setFormState("numberOfUsers", queryNumberOfUsers);
       setFormState("services", [...formState.services, ...queryServices]);
       setFormState("paymentRecurrence", queryPaymentRecurrence);
@@ -264,53 +297,18 @@ const SubscriptionCreatePage = () => {
 
   return (
     <ProtectedRoute router={router}>
-      <LayoutSidebar>
+      <LayoutSidebar global={global} translations={translations}>
         <div>
           <div className="flex flex-row justify-between">
             <h3 className="text-gray-700 text-3xl font-medium">
-              Create Subscription
+              {translations.create_subscription}
             </h3>
             <a
               onClick={handleSubmitData}
               className="cursor-pointer bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
             >
-              Save
+              {translations.create}
             </a>
-          </div>
-
-          <div className="max-w-xl mx-auto my-4 border-b-2 pb-4">
-            <div className="flex pb-3">
-              <div className="flex-1"></div>
-
-              <div className="flex-1">
-                <div className="w-10 h-10 bg-green-500 border-gray-200 mx-auto rounded-full text-lg text-white flex items-center">
-                  <span className="text-white text-center w-full">1</span>
-                </div>
-              </div>
-
-              <div className="w-1/3 align-center items-center align-middle content-center flex">
-                <div className="w-full bg-gray-300 rounded items-center align-middle align-center flex-1">
-                  <div
-                    className="bg-green-500 text-xs leading-none py-1 text-center text-grey-darkest rounded "
-                    style={{ width: "20%" }}
-                  ></div>
-                </div>
-              </div>
-
-              <div className="flex-1">
-                <div className="w-10 h-10 bg-white border-2 border-gray-200 mx-auto rounded-full text-lg text-black flex items-center">
-                  <span className="text-gray-600 text-center w-full">2</span>
-                </div>
-              </div>
-
-              <div className="flex-1"></div>
-            </div>
-
-            <div className="flex text-xs content-center text-center">
-              <div className="w-1/2">Subscription Information</div>
-
-              <div className="w-1/2">Make Payment</div>
-            </div>
           </div>
 
           <div className="flex flex-col mt-8">
@@ -323,9 +321,43 @@ const SubscriptionCreatePage = () => {
                         <div className="w-full px-3">
                           <label
                             className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
+                            htmlFor="owner"
+                          >
+                            {translations.owner}
+                          </label>
+                          <div className="flex flex-row justify-between items-center">
+                            <select
+                              onChange={(e) =>
+                                setFormState("owner", e.target.value)
+                              }
+                              value={formState.owner}
+                              id="owner"
+                              className="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                            >
+                              <option value={loggedInUserId}>
+                                {translations.you}
+                              </option>
+                              {partneredUsers.length > 0 &&
+                                partneredUsers.map((partneredUserItem) => (
+                                  <option value={partneredUserItem.id}>
+                                    {partneredUserItem.email}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                          <p className="text-gray-600 text-xs italic">
+                            {/* {translations.helper_title_for_this_subscription} */}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap -mx-3 mb-6 max-w-lg">
+                        <div className="w-full px-3">
+                          <label
+                            className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                             htmlFor="title"
                           >
-                            Title
+                            {translations.title}
                           </label>
                           <div className="flex flex-row justify-between items-center">
                             <input
@@ -335,12 +367,12 @@ const SubscriptionCreatePage = () => {
                               name="title"
                               id="title"
                               type="text"
-                              placeholder="Title"
+                              placeholder={translations.title}
                               className={`appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500 me-2`}
                             />
                           </div>
                           <p className="text-gray-600 text-xs italic">
-                            Title for this subscription
+                            {translations.helper_title_for_this_subscription}
                           </p>
                         </div>
                       </div>
@@ -351,7 +383,7 @@ const SubscriptionCreatePage = () => {
                             className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                             htmlFor="subdomain"
                           >
-                            Subdomain
+                            {translations.subdomain}
                           </label>
                           <div className="flex flex-row justify-between items-center">
                             <input
@@ -367,7 +399,7 @@ const SubscriptionCreatePage = () => {
                               `}
                             />
                             <span className="block w-full py-3 mb-3">
-                              .geekware.com
+                              .top1erp.com
                             </span>
                           </div>
                           {errors.subdomainExists && (
@@ -376,7 +408,9 @@ const SubscriptionCreatePage = () => {
                             </p>
                           )}
                           <p className="text-gray-600 text-xs italic">
-                            Subdomain for this subscription
+                            {
+                              translations.helper_subdomain_for_this_subscription
+                            }
                           </p>
                         </div>
                       </div>
@@ -387,7 +421,7 @@ const SubscriptionCreatePage = () => {
                             className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                             htmlFor="paymentRecurrence"
                           >
-                            Payment Recurrance
+                            {translations.paymentRecurrence}
                           </label>
                           <select
                             onChange={(e) =>
@@ -397,16 +431,17 @@ const SubscriptionCreatePage = () => {
                             id="paymentRecurrence"
                             className="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                           >
-                            {Object.values(PAYMENT_RECURRENCE_OPTIONS).map(
-                              (item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.id}
-                                </option>
-                              )
-                            )}
+                            <option value={"MONTHLY"}>
+                              {translations.monthly}
+                            </option>
+                            <option value={"YEARLY"}>
+                              {translations.yearly}
+                            </option>
                           </select>
-                          <p className="text-gray-600 text-xs italic">
-                            Payment Recurrence for this subscription
+                          <p className="text-gray-600 text-xs italic mt-4">
+                            {
+                              translations.helper_recurrence_for_this_subscription
+                            }
                           </p>
                         </div>
                       </div>
@@ -417,7 +452,7 @@ const SubscriptionCreatePage = () => {
                             className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                             htmlFor="numberOfUsers"
                           >
-                            Number of Users
+                            {translations.number_of_users}
                           </label>
                           <div className="flex flex-row justify-between items-center">
                             <input
@@ -433,21 +468,21 @@ const SubscriptionCreatePage = () => {
                               className="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500 me-2"
                             />
                             <span className="block w-full py-3 mb-3">
-                              {formState.paymentRecurrence ===
-                              PAYMENT_RECURRENCE_OPTIONS.monthly.id
-                                ? PRICING_USER_PER_MONTH
-                                : PRICING_USER_PER_MONTH *
-                                  PAYMENT_RECURRENCE_OPTIONS.yearly
-                                    .multiplicationFactor}{" "}
-                              USD / User /{" "}
-                              {formState.paymentRecurrence ===
-                              PAYMENT_RECURRENCE_OPTIONS.monthly.id
-                                ? "Month"
-                                : "Year"}
+                              {formState.paymentRecurrence === "MONTHLY"
+                                ? `$${pricing_user_month}`
+                                : `$${pricing_user_year}`}{" "}
+                              / User /{" "}
+                              {formState.paymentRecurrence === "MONTHLY" ? (
+                                <>{translations.monthly}</>
+                              ) : (
+                                <>{translations.yearly}</>
+                              )}
                             </span>
                           </div>
                           <p className="text-gray-600 text-xs italic">
-                            Number of users for this subscription
+                            {
+                              translations.helper_number_of_users_for_this_subscription
+                            }
                           </p>
                         </div>
                       </div>
@@ -458,12 +493,18 @@ const SubscriptionCreatePage = () => {
                             <div
                               key={service.id}
                               onClick={
-                                formState.services.indexOf(service.id) === -1
-                                  ? () => handleChooseService(service.id)
-                                  : () => handleRemoveService(service.id)
+                                formState.services.indexOf(
+                                  service.service_code
+                                ) === -1
+                                  ? () =>
+                                      handleChooseService(service.service_code)
+                                  : () =>
+                                      handleRemoveService(service.service_code)
                               }
                               className={`mb-2 flex cursor-pointer border-2 ${
-                                formState.services.indexOf(service.id) > -1
+                                formState.services.indexOf(
+                                  service.service_code
+                                ) > -1
                                   ? " bg-primary-200 border-primary-700"
                                   : " bg-primary-50 border-gray-500"
                               } rounded p-5 justify-between items-center`}
@@ -483,17 +524,18 @@ const SubscriptionCreatePage = () => {
                                   <div>
                                     <span className="text-gray-500">$</span>{" "}
                                     <span className="text-3xl">
-                                      {formState.paymentRecurrence ===
-                                      PAYMENT_RECURRENCE_OPTIONS.monthly.id
+                                      {formState.paymentRecurrence === "MONTHLY"
                                         ? service.monthlyPrice
                                         : service.yearlyPrice}{" "}
                                     </span>{" "}
                                     <span className="text-gray-500">
                                       /{" "}
                                       {formState.paymentRecurrence ===
-                                      PAYMENT_RECURRENCE_OPTIONS.monthly.id
-                                        ? "Month"
-                                        : "Year"}
+                                      "MONTHLY" ? (
+                                        <>{translations.monthly}</>
+                                      ) : (
+                                        <>{translations.yearly}</>
+                                      )}
                                     </span>
                                   </div>
                                 </div>
@@ -505,7 +547,9 @@ const SubscriptionCreatePage = () => {
                       </div>
                     </div>
                     <div className="sm:w-8/12 md:w-4/12 flex flex-col justify-start items-center">
-                      <h6 className="text-black font-medium">Order summary</h6>
+                      <h6 className="text-black font-medium">
+                        {translations.order_summary}
+                      </h6>
                       <div
                         className="
                 flex
@@ -516,7 +560,9 @@ const SubscriptionCreatePage = () => {
                 border-b-2 border-gray-200
               "
                       >
-                        <p className="text-gray-400 ml-4">Subtotal</p>
+                        <p className="text-gray-400 ml-4">
+                          {translations.subtotal}
+                        </p>
                         <p className="text-black mr-4">${formState.subTotal}</p>
                       </div>
                       {formState.discount && (
@@ -531,7 +577,7 @@ const SubscriptionCreatePage = () => {
                             ${formState.discount > 0 && "bg-blue-100"}
                           `}
                         >
-                          <p className={`ml-4`}>Discount</p>
+                          <p className={`ml-4`}>{translations.discount}</p>
                           <p
                             className={`mr-4
                          ${formState.discount > 0 && "text-red-500"}
@@ -551,10 +597,16 @@ const SubscriptionCreatePage = () => {
                 border-b-2 border-gray-200
               "
                       >
-                        <p className="text-gray-400 ml-4">Total</p>
+                        <p className="text-gray-400 ml-4">
+                          {translations.total}
+                        </p>
                         <p className="text-indigo-600 mr-4">
-                          ${formState.total} Billed{" "}
-                          {formState.paymentRecurrence}
+                          ${formState.total} {translations.billed}{" "}
+                          {
+                            translations[
+                              formState.paymentRecurrence.toLowerCase()
+                            ]
+                          }
                         </p>
                       </div>
 
@@ -573,7 +625,7 @@ const SubscriptionCreatePage = () => {
                             className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
                             htmlFor="couponCode"
                           >
-                            Coupon Code
+                            {translations.coupon_code}
                           </label>
                           <input
                             onChange={(e) =>
@@ -583,12 +635,9 @@ const SubscriptionCreatePage = () => {
                             type="text"
                             name="couponCode"
                             id="couponCode"
-                            placeholder="Coupon Code"
-                            className="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                            placeholder={translations.coupon_code}
+                            className="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                           />
-                          <p className="text-gray-600 text-xs italic">
-                            A reminder for this subscription
-                          </p>
                         </div>
                         <button
                           onClick={handleApplyCode}
@@ -599,7 +648,7 @@ const SubscriptionCreatePage = () => {
                               : "bg-indigo-600"
                           }`}
                         >
-                          Apply code
+                          {translations.apply_code}
                         </button>
                       </div>
                     </div>
@@ -613,30 +662,5 @@ const SubscriptionCreatePage = () => {
     </ProtectedRoute>
   );
 };
-
-export async function getStaticProps(context) {
-  const { params, locale, locales, defaultLocale, preview = null } = context;
-
-  const globalLocale = await getGlobalData(locale);
-  // Fetch pages. Include drafts if preview mode is on
-
-  const pageContext = {
-    locales,
-    defaultLocale,
-    slug: "testing",
-  };
-
-  const localizedPaths = getLocalizedPaths(pageContext);
-
-  return {
-    props: {
-      global: globalLocale,
-      pageContext: {
-        ...pageContext,
-        localizedPaths,
-      },
-    },
-  };
-}
 
 export default SubscriptionCreatePage;
