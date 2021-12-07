@@ -137,7 +137,7 @@ const SubscriptionListPage = ({ global, translations }) => {
           statement_descriptor: "statement_descriptor",
           saveCard: false,
           threeDSecure: true,
-          redirect: `http://127.0.0.1:3000/dashboard/payment/verify`,
+          redirect: `https://top1erp.com/dashboard/payment/verify`,
           post: null,
         },
       },
