@@ -83,7 +83,7 @@ MyApp.getInitialProps = async (appContext) => {
   const globalLocale = await getGlobalData(appContext.router.locale);
   const systemSettings = await getSystemSettings();
   const translations = await getUITranslations(
-    parseCookies(appContext.ctx).NEXT_LOCALE
+    parseCookies(appContext.ctx).NEXT_LOCALE || "en"
   );
 
   return {
