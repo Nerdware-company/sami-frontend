@@ -220,41 +220,6 @@ const SubscriptionViewPage = ({ global, translations }) => {
               "
                       >
                         <p className="text-gray-400 ml-4">
-                          {translations.subtotal}
-                        </p>
-                        <p className="text-black mr-4">
-                          $ {subscription.subTotal}
-                        </p>
-                      </div>
-                      <div
-                        className={`
-                            flex
-                            justify-between
-                            items-center
-                            w-full
-                            py-5
-                            border-b-2 border-gray-200
-                          `}
-                      >
-                        <p className={`ml-4`}>{translations.discount}</p>
-                        <p
-                          className={`mr-4
-                         `}
-                        >
-                          {subscription.discount || 0}%
-                        </p>
-                      </div>
-                      <div
-                        className="
-                flex
-                justify-between
-                items-center
-                w-full
-                py-5
-                border-b-2 border-gray-200
-              "
-                      >
-                        <p className="text-gray-400 ml-4">
                           {translations.total}
                         </p>
                         <p className="text-indigo-600 mr-4">
@@ -265,33 +230,6 @@ const SubscriptionViewPage = ({ global, translations }) => {
                             ]
                           }
                         </p>
-                      </div>
-
-                      <div
-                        className="
-                flex flex-col
-                justify-between
-                items-center
-                px-3
-                py-5
-                w-full
-              "
-                      >
-                        <div className="w-full mt-2 mb-4">
-                          <label
-                            className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
-                            htmlFor="couponCode"
-                          >
-                            {translations.coupon_code}
-                          </label>
-                          <span>
-                            {subscription.coupon ? (
-                              subscription.coupon
-                            ) : (
-                              <>{translations.empty}</>
-                            )}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </div>

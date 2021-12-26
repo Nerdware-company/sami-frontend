@@ -8,7 +8,7 @@ import { getGlobalData, getStrapiURL } from "utils/api";
 import { getLocalizedPaths } from "utils/localize";
 import countries from "utils/countries";
 
-const SubscriptionEditPage = ({ global, translations, system }) => {
+const CheckoutPage = ({ global, translations, system }) => {
   const router = useRouter();
   const subscriptionId = router.query.id;
   const { pricing_user_month, pricing_user_year } = system;
@@ -24,7 +24,6 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
     total: 0.0,
     active: true,
     services: [],
-    coupon: null,
     owner: loggedInUserId,
   });
 
@@ -33,6 +32,11 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
     numberOfUsers: 1,
     services: [],
     subTotal: 0.0,
+    discount: null,
+    fixedPrice: null,
+    coupon_code: "",
+    coupon: null,
+    couponType: null,
     total: 0.0,
   });
 
@@ -93,6 +97,9 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
         ? pricing_user_month
         : pricing_user_year;
 
+    let discountPercentage =
+      formState.discount < 1 ? 1 : formState.discount / 100;
+
     let calculateSubTotal =
       services
         .filter((item) => formState.services.indexOf(item.service_code) > -1)
@@ -105,8 +112,15 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
           }
         }, 0) +
       formState.numberOfUsers * userPricing;
+    let calculateTotal = 0;
 
-    let calculateTotal = calculateSubTotal;
+    if (formState.couponType === "discount") {
+      calculateTotal = calculateSubTotal * discountPercentage;
+    } else if (formState.couponType === "fixed") {
+      calculateTotal = formState.fixedPrice;
+    } else {
+      calculateTotal = calculateSubTotal;
+    }
 
     if (
       (formState.services.length > 0 && subscription.paymentRecurrence) ||
@@ -167,9 +181,9 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
     }
   };
 
-  const handlePay = () => {
+  const handlePay = (itemToSell, typeOfPayment) => {
     let validUntill =
-      subscription.paymentRecurrence === "MONTHLY"
+      itemToSell.paymentRecurrence === "MONTHLY"
         ? new Date(
             new Date(Date.now()).setDate(new Date(Date.now()).getDate() + 30)
           ).getTime()
@@ -177,45 +191,40 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
             new Date(Date.now()).setDate(new Date(Date.now()).getDate() + 365)
           ).getTime();
 
-    let serviceCodes = services
-      .filter((item) => formState.services.includes(item.service_code))
+    let serviceCodes = itemToSell.services
       .map((item) => item.service_code)
       .join(",");
-
-    let serviceIds = services
-      .filter((item) => formState.services.includes(item.service_code))
-      .map((item) => item.id)
-      .join(",");
+    let serviceIds = itemToSell.services.map((item) => item.id).join(",");
 
     let extractedCountryCode = countries.filter(
-      (item) => ~subscription.owner.phoneNumber.indexOf(item.dial_code)
+      (item) => ~itemToSell.owner.phoneNumber.indexOf(item.dial_code)
     )[0].dial_code;
 
-    let phoneNumberWithoutCountryCode = subscription.owner.phoneNumber.replace(
+    let phoneNumberWithoutCountryCode = itemToSell.owner.phoneNumber.replace(
       extractedCountryCode,
       ""
     );
 
     let dataToSend = {
       // Quota Info
-      type_of_payment: "UPDATE",
+      type_of_payment: typeOfPayment,
       service_codes: serviceCodes,
       service_ids: serviceIds,
       valid_untill: validUntill,
 
       // Subscription Info
-      id: subscription.id,
-      subdomain: subscription.subdomain,
-      company_name: subscription.title,
+      id: itemToSell.id,
+      subdomain: itemToSell.subdomain,
+      company_name: itemToSell.title,
       subtotal: parseFloat(formState.subTotal),
-      discount: subscription.discount ? subscription.discount : 0,
+      coupon: formState.coupon,
       total: parseFloat(formState.total),
-      number_of_users: formState.numberOfUsers,
+      number_of_users: itemToSell.numberOfUsers,
 
       // Owner Info
-      email: subscription.owner.email,
-      first_name: subscription.owner.firstname,
-      last_name: subscription.owner.lastname,
+      email: itemToSell.owner.email,
+      first_name: itemToSell.owner.firstname,
+      last_name: itemToSell.owner.lastname,
     };
 
     goSell.config({
@@ -286,8 +295,8 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
         items: [
           {
             id: 0,
-            name: `TOP1ERP Fees (UPGRADE) for subscription ID ${dataToSend.id}`,
-            description: `(UPGRADE) Fees for subscription ID ${dataToSend.id}`,
+            name: `TOP1ERP Fees for subscription ID ${dataToSend.id}`,
+            description: `Fees for subscription ID ${dataToSend.id}`,
             quantity: "1",
             amount_per_unit: 0,
             total_amount: dataToSend.total,
@@ -304,7 +313,7 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
           metadata: {
             ...dataToSend,
           },
-          description: `(UPGRADE) Fees for subscription ID ${dataToSend.id}`,
+          description: `Fees for subscription ID ${dataToSend.id}`,
           statement_descriptor: "statement_descriptor",
           saveCard: false,
           threeDSecure: true,
@@ -349,6 +358,58 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
     }
   };
 
+  const handleApplyCode = async () => {
+    if (formState.coupon_code.length < 4) return;
+    try {
+      const response = await fetch(
+        getStrapiURL(`/coupons?code=${formState.coupon_code}`),
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const { status } = response;
+      const responseJSON = await response.json();
+
+      if (status == 200) {
+        if (responseJSON.length > 0) {
+          let couponActive = responseJSON[0].active;
+          let validUntil = responseJSON[0].validUntil;
+          let validUntilUnix = new Date(validUntil).getTime();
+          let currentUnixTime = Date.now().toString();
+          if (responseJSON[0].user) {
+            if (loggedInUserId !== responseJSON[0].user.id) {
+              alert("Coupon made for another user");
+              return;
+            }
+          }
+          if (currentUnixTime > validUntilUnix) {
+            alert("Coupon has expired");
+            return;
+          } else if (!couponActive) {
+            alert("Coupon not active");
+            return;
+          }
+
+          console.log(responseJSON[0]);
+
+          setFormState("coupon", responseJSON[0].code);
+          setFormState("couponUserId", responseJSON[0].user.id);
+          setFormState("couponType", responseJSON[0].couponType);
+          setFormState("discount", responseJSON[0].discountPercentage);
+          setFormState("fixedPrice", responseJSON[0].fixedPrice);
+        }
+      } else {
+      }
+    } catch (error) {
+      console.log("the error", error);
+    }
+  };
+
   React.useEffect(() => {
     fetchSubscription();
     fetchServices();
@@ -356,148 +417,55 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
 
   React.useEffect(() => {
     handleCalculateTotal();
-  }, [formState.services, formState.numberOfUsers, services]);
+  }, [
+    formState.discount,
+    formState.fixedPrice,
+    formState.services,
+    formState.numberOfUsers,
+    services,
+  ]);
 
   React.useEffect(() => {
-    console.log(formState);
+    // console.log(formState);
   }, [formState]);
 
   return (
     <ProtectedRoute router={router}>
       <LayoutSidebar global={global} translations={translations}>
-        <div>
+        <div className="w-1/2 mx-auto">
           <div className="flex flex-row justify-between">
             <h3 className="text-gray-700 text-3xl font-medium">
-              {translations.edit_subscription} #{subscriptionId}
+              {translations.pay_subscription} #{subscriptionId}
             </h3>
-            <a
-              onClick={handlePay}
-              className="cursor-pointer bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-            >
-              {translations.pay_subscription}
-            </a>
-          </div>
+            {[0].map(() => {
+              let lastInvoice = subscription?.invoices
+                ?.filter((invoice) => invoice.status === "paid")
+                .map(function (e) {
+                  return e.paidDate;
+                })
+                .sort()
+                .reverse()[0];
 
-          <div className="flex flex-row justify-between my-4">
-            <h5 className="text-red-500 text-md font-medium">
-              * {translations.edit_subscription_must_pay_immediately}
-            </h5>
+              return (
+                <a
+                  onClick={() =>
+                    handlePay(subscription, lastInvoice ? "UPDATE" : "CREATE")
+                  }
+                  className="cursor-pointer bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                >
+                  {lastInvoice}
+                  {translations.pay_subscription}
+                </a>
+              );
+            })}
           </div>
 
           <div className="flex flex-col mt-8">
             <div className="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 ">
-              <div className="align-middle inline-block min-w-full overflow-hidden sm:rounded-lg border-b border-gray-200 py-5 px-5 bg-white shadow">
+              <div className="align-middle inline-block min-w-full overflow-hidden sm:rounded-lg border-b border-gray-200 py-5 bg-white shadow">
                 <div className="w-full">
                   <div className="md:flex md:flex-wrap md:flex-row">
-                    <div className="md:w-8/12">
-                      <div className="flex flex-wrap -mx-3 mb-6 max-w-lg">
-                        <div className="w-full px-3">
-                          <label
-                            className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
-                            htmlFor="numberOfUsers"
-                          >
-                            {translations.number_of_users}
-                          </label>
-                          <div className="flex flex-row justify-between items-center">
-                            <input
-                              onChange={(e) =>
-                                handleSetNumberOfUsers(e.target.value)
-                              }
-                              value={formState.numberOfUsers}
-                              max={100}
-                              min={1}
-                              type="number"
-                              name="numberOfUsers"
-                              id="numberOfUsers"
-                              className="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500 me-2"
-                            />
-                            <span className="block w-full py-3 mb-3">
-                              {subscription.paymentRecurrence === "MONTHLY"
-                                ? `$${pricing_user_month}`
-                                : `$${pricing_user_year}`}{" "}
-                              / {translations.user} /{" "}
-                              {subscription.paymentRecurrence === "MONTHLY" ? (
-                                <>{translations.monthly}</>
-                              ) : (
-                                <>{translations.yearly}</>
-                              )}
-                            </span>
-                          </div>
-                          <p className="text-gray-600 text-xs italic">
-                            {
-                              translations.helper_number_of_users_for_this_subscription
-                            }
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap -mx-3 mb-2">
-                        <div className="w-full md:w-8/12 md:flex md:flex-nowrap md:flex-row md:items-start gap-2 px-3 mb-6 md:mb-0">
-                          {services.map((service) => {
-                            return (
-                              <div
-                                key={service.id}
-                                onClick={
-                                  formState.services.indexOf(
-                                    service.service_code
-                                  ) === -1
-                                    ? () =>
-                                        handleChooseService(
-                                          service.service_code
-                                        )
-                                    : () =>
-                                        handleRemoveService(
-                                          service.service_code
-                                        )
-                                }
-                                className={`mb-2 flex cursor-pointer border-2 ${
-                                  formState.services.indexOf(
-                                    service.service_code
-                                  ) > -1
-                                    ? " bg-primary-200 border-primary-700"
-                                    : " bg-primary-50 border-gray-500"
-                                } rounded p-5 justify-between items-center`}
-                              >
-                                <div className="flex justify-start gap-5 items-center me-2">
-                                  <div className="w-20 h-20 rounded-lg">
-                                    <img
-                                      className="object-contain w-20 h-20"
-                                      src={getStrapiURL(service.picture.url)}
-                                      alt={service.title}
-                                    />
-                                  </div>
-                                  <div>
-                                    <h1 className="font-bold tracking-wider text-gray-700">
-                                      {service.title}
-                                    </h1>
-                                    <div>
-                                      <span className="text-gray-500">$</span>{" "}
-                                      <span className="text-3xl">
-                                        {subscription.paymentRecurrence ===
-                                        "MONTHLY"
-                                          ? service.monthlyPrice
-                                          : service.yearlyPrice}{" "}
-                                      </span>{" "}
-                                      <span className="text-gray-500">
-                                        /{" "}
-                                        {subscription.paymentRecurrence ===
-                                        "MONTHLY" ? (
-                                          <>{translations.monthly}</>
-                                        ) : (
-                                          <>{translations.yearly}</>
-                                        )}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="w-full md:w-4/12 px-3 mb-6 md:mb-0"></div>
-                      </div>
-                    </div>
-                    <div className="sm:w-8/12 md:w-4/12 flex flex-col justify-start items-center">
+                    <div className="w-full flex flex-col justify-start items-center">
                       <h6 className="text-black font-medium">
                         {translations.order_summary}
                       </h6>
@@ -508,6 +476,50 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
                 items-center
                 w-full
                 py-5
+                px-5
+                border-b-2 border-gray-200
+              "
+                      >
+                        <p className="text-gray-400 ml-4">
+                          {translations.subtotal}
+                        </p>
+                        <p className="text-black mr-4">${formState.subTotal}</p>
+                      </div>
+                      {formState.coupon && (
+                        <div
+                          className={`
+                            flex
+                            justify-between
+                            items-center
+                            w-full
+                            py-5
+                px-5
+                            border-b-2 border-gray-200
+                            ${formState.coupon && "bg-blue-100"}
+                          `}
+                        >
+                          <p className={`ml-4`}>{translations.discount}</p>
+                          <p
+                            className={`mr-4
+                         ${formState.coupon && "text-red-500"}
+                         `}
+                          >
+                            {formState.couponType === "discount" ? (
+                              <>{formState.discount}%</>
+                            ) : (
+                              <>تغيير القيمة الى {formState.fixedPrice}$</>
+                            )}
+                          </p>
+                        </div>
+                      )}
+                      <div
+                        className="
+                flex
+                justify-between
+                items-center
+                w-full
+                py-5
+                px-5
               "
                       >
                         <p className="text-gray-400 ml-4">
@@ -522,6 +534,46 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
                           }
                         </p>
                       </div>
+
+                      <div
+                        className="
+                flex flex-col
+                justify-between
+                items-center
+                px-3
+                py-5
+                w-full
+              "
+                      >
+                        <div className="w-full mt-2 mb-4">
+                          <label
+                            className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2"
+                            htmlFor="couponCode"
+                          >
+                            {translations.coupon_code}
+                          </label>
+                          <input
+                            onChange={(e) =>
+                              setFormState("coupon_code", e.target.value)
+                            }
+                            disabled={formState.coupon}
+                            type="text"
+                            name="couponCode"
+                            id="couponCode"
+                            placeholder={translations.coupon_code}
+                            className="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                          />
+                        </div>
+                        <button
+                          onClick={handleApplyCode}
+                          disabled={formState.coupon}
+                          className={`w-full  text-white px-2 py-2 rounded-md ${
+                            formState.coupon ? "bg-gray-500" : "bg-indigo-600"
+                          }`}
+                        >
+                          {translations.apply_code}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -534,4 +586,4 @@ const SubscriptionEditPage = ({ global, translations, system }) => {
   );
 };
 
-export default SubscriptionEditPage;
+export default CheckoutPage;

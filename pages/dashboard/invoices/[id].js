@@ -137,10 +137,18 @@ const InvoiceViewPage = ({ global, translations }) => {
                     </div>
                     <div className="flex flex-col justify-center items-start">
                       <span className="text-gray-400">
-                        {translations.discount} (%)
+                        {translations.discount}
                       </span>
                       <span className="text-black font-bold">
-                        {invoice.discount ? <>${invoice.discount}%</> : <>0%</>}
+                        {invoice.coupon ? (
+                          invoice.coupon.couponType === "discount" ? (
+                            <>{invoice.coupon.discount}%</>
+                          ) : (
+                            <>تغيير القيمة الى {invoice.coupon.fixedPrice}$</>
+                          )
+                        ) : (
+                          <>0</>
+                        )}
                       </span>
                     </div>
                     <div className="flex flex-col justify-center items-start">

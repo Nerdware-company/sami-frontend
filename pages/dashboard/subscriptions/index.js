@@ -15,6 +15,7 @@ const SubscriptionListPage = ({ global, translations }) => {
   const { user } = React.useContext(AuthContext);
   const { jwt, id: loggedInUserId } = user;
   const [subscriptions, setSubscriptions] = React.useState([]);
+
   const fetchSubscriptions = async () => {
     let string = `[owner.id]=${loggedInUserId}&_where[_or][1][owner.partner.id]=${loggedInUserId}`;
     try {
@@ -186,76 +187,8 @@ const SubscriptionListPage = ({ global, translations }) => {
     goSell.openLightBox();
   };
 
-  // const handleCreateBankTransferInvoice = async (subData) => {
-  //   let dataToSubmit = {
-  //     subscription: subData.id,
-  //     total: subData.total,
-  //     subTotal: subData.subTotal,
-  //     discount: subData.discount,
-  //     status: "pending",
-  //     paymentType: "banktransfer",
-  //   };
-
-  //   try {
-  //     const response = await fetch(getStrapiURL(`/invoices`), {
-  //       method: "POST",
-  //       headers: {
-  //         Accept: "application/json",
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${jwt}`,
-  //       },
-  //       body: JSON.stringify(dataToSubmit),
-  //     });
-
-  //     const { status } = response;
-
-  //     if (status == 200) {
-  //       router.push("/dashboard/invoices");
-  //     } else {
-  //       console.log(response);
-  //     }
-  //   } catch (error) {
-  //     console.log("the error", error);
-  //   }
-  // };
-
   React.useEffect(() => {
     fetchSubscriptions();
-    // //mount element
-    // card.mount("#element-container");
-    // //card change event listener
-    // card.addEventListener("change", function (event) {
-    //   if (event.loaded) {
-    //     console.log("UI loaded :" + event.loaded);
-    //     console.log("current currency is :" + card.getCurrency());
-    //   }
-    //   var displayError = document.getElementById("error-handler");
-    //   if (event.error) {
-    //     displayError.textContent = event.error.message;
-    //   } else {
-    //     displayError.textContent = "";
-    //   }
-    // });
-    // const form = document.getElementById("form-container");
-    // form.addEventListener("submit", function (event) {
-    //   event.preventDefault();
-
-    //   tap.createToken(card).then(function (result) {
-    //     console.log(result);
-    //     if (result.error) {
-    //       // Inform the user if there was an error
-    //       var errorElement = document.getElementById("error-handler");
-    //       errorElement.textContent = result.error.message;
-    //     } else {
-    //       // Send the token to your server
-    //       var errorElement = document.getElementById("success");
-    //       errorElement.style.display = "block";
-    //       var tokenElement = document.getElementById("token");
-    //       tokenElement.textContent = result.id;
-    //       tapTokenHandler(token);
-    //     }
-    //   });
-    // });
   }, []);
 
   return (
@@ -274,22 +207,6 @@ const SubscriptionListPage = ({ global, translations }) => {
             </a>
           </Link>
         </div>
-
-        {/* <form id="form-container" method="post" action="/charge">
-          <div id="element-container"></div>
-          <div id="error-handler" role="alert"></div>
-          <div
-            id="success"
-            style={{
-              display: "none",
-              position: "relative",
-              float: "left",
-            }}
-          >
-            Success! Your token is <span id="token"></span>
-          </div>
-          <button id="tap-btn">Submit</button>
-        </form> */}
 
         <div className="flex flex-col mt-8">
           <div className="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
@@ -389,11 +306,6 @@ const SubscriptionListPage = ({ global, translations }) => {
 
                         <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
                           ${item.total}&nbsp;
-                          {item.discount > 0 && (
-                            <span className="text-xs text-red-500">
-                              ({item.discount}%)
-                            </span>
-                          )}
                         </td>
 
                         <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
@@ -454,6 +366,18 @@ const SubscriptionListPage = ({ global, translations }) => {
                         </td>
                         <td className="text-center px-6 py-4 border-b border-gray-200 text-sm leading-5 font-medium">
                           {(nextPaymentDate < Date.now() || !lastInvoice) && (
+                            <Link
+                              href={`/dashboard/subscriptions/${item.id}/checkout`}
+                            >
+                              <a
+                                href={`/dashboard/subscriptions/${item.id}/checkout`}
+                                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                              >
+                                {translations.pay_subscription}
+                              </a>
+                            </Link>
+                          )}
+                          {/* {(nextPaymentDate < Date.now() || !lastInvoice) && (
                             <DropDownButton
                               buttonName={translations.pay_subscription}
                               options={[
@@ -478,7 +402,7 @@ const SubscriptionListPage = ({ global, translations }) => {
                                 },
                               ]}
                             />
-                          )}
+                          )} */}
                         </td>
                       </tr>
                     );

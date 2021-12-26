@@ -53,7 +53,7 @@ const VerifyPaymentPage = ({ global, translations }) => {
         },
         body: JSON.stringify({
           subscription: data.id,
-          discount: data.discount,
+          coupon: data.coupon,
           subTotal: data.subtotal,
           total: data.total,
           status: "paid",
@@ -79,8 +79,6 @@ const VerifyPaymentPage = ({ global, translations }) => {
         body: JSON.stringify({
           services: data.service_ids,
           numberOfUsers: data.number_of_users,
-          subTotal: data.subtotal,
-          total: data.total,
           active: true,
         }),
       });

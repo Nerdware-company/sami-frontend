@@ -8,12 +8,14 @@ import { getLocalizedPaths } from "utils/localize";
 import querystring from "querystring";
 import DropDownButton from "@/components/elements/dropDownButton";
 import Link from "next/link";
+import countries from "utils/countries";
 
 const SubscriptionListPage = ({ global, translations }) => {
   const router = useRouter();
   const { user } = React.useContext(AuthContext);
   const { jwt, id: loggedInUserId } = user;
   const [subscriptions, setSubscriptions] = React.useState([]);
+
   const fetchSubscriptions = async () => {
     let string = `[owner.id]=${router.query.id}`;
     try {
@@ -41,8 +43,51 @@ const SubscriptionListPage = ({ global, translations }) => {
     }
   };
 
-  const handlePay = (itemToSell) => {
-    let total = parseFloat(itemToSell.total);
+  const handlePay = (itemToSell, typeOfPayment) => {
+    let validUntill =
+      itemToSell.paymentRecurrence === "MONTHLY"
+        ? new Date(
+            new Date(Date.now()).setDate(new Date(Date.now()).getDate() + 30)
+          ).getTime()
+        : new Date(
+            new Date(Date.now()).setDate(new Date(Date.now()).getDate() + 365)
+          ).getTime();
+
+    let serviceCodes = itemToSell.services
+      .map((item) => item.service_code)
+      .join(",");
+    let serviceIds = itemToSell.services.map((item) => item.id).join(",");
+
+    let extractedCountryCode = countries.filter(
+      (item) => ~itemToSell.owner.phoneNumber.indexOf(item.dial_code)
+    )[0].dial_code;
+
+    let phoneNumberWithoutCountryCode = itemToSell.owner.phoneNumber.replace(
+      extractedCountryCode,
+      ""
+    );
+
+    let dataToSend = {
+      // Quota Info
+      type_of_payment: typeOfPayment,
+      service_codes: serviceCodes,
+      service_ids: serviceIds,
+      valid_untill: validUntill,
+
+      // Subscription Info
+      id: itemToSell.id,
+      subdomain: itemToSell.subdomain,
+      company_name: itemToSell.title,
+      subtotal: parseFloat(itemToSell.subTotal),
+      discount: itemToSell.discount ? itemToSell.discount : 0,
+      total: parseFloat(itemToSell.total),
+      number_of_users: itemToSell.numberOfUsers,
+
+      // Owner Info
+      email: itemToSell.owner.email,
+      first_name: itemToSell.owner.firstname,
+      last_name: itemToSell.owner.lastname,
+    };
 
     goSell.config({
       gateway: {
@@ -97,26 +142,26 @@ const SubscriptionListPage = ({ global, translations }) => {
         },
       },
       customer: {
-        first_name: user.firstname,
+        first_name: dataToSend.first_name,
         middle_name: "",
-        last_name: user.lastname,
-        email: user.email,
+        last_name: dataToSend.last_name,
+        email: dataToSend.email,
         phone: {
-          country_code: "+965",
-          number: "00000000",
+          country_code: extractedCountryCode,
+          number: phoneNumberWithoutCountryCode,
         },
       },
       order: {
-        amount: total,
+        amount: dataToSend.total,
         currency: "USD",
         items: [
           {
             id: 0,
-            name: `TOP1ERP Fees for subscription ID ${itemToSell.id}`,
-            description: `Fees for subscription ID ${itemToSell.id}`,
+            name: `TOP1ERP Fees for subscription ID ${dataToSend.id}`,
+            description: `Fees for subscription ID ${dataToSend.id}`,
             quantity: "1",
             amount_per_unit: 0,
-            total_amount: total,
+            total_amount: dataToSend.total,
           },
         ],
       },
@@ -128,12 +173,9 @@ const SubscriptionListPage = ({ global, translations }) => {
             type: "VOID",
           },
           metadata: {
-            subscriptionId: itemToSell.id,
-            subscriptionSubTotal: itemToSell.subTotal,
-            subscriptionDiscount: itemToSell.discount,
-            subscriptionTotal: itemToSell.total,
+            ...dataToSend,
           },
-          description: `Fees for subscription ID ${itemToSell.id}`,
+          description: `Fees for subscription ID ${dataToSend.id}`,
           statement_descriptor: "statement_descriptor",
           saveCard: false,
           threeDSecure: true,
@@ -145,76 +187,8 @@ const SubscriptionListPage = ({ global, translations }) => {
     goSell.openLightBox();
   };
 
-  const handleCreateBankTransferInvoice = async (subData) => {
-    let dataToSubmit = {
-      subscription: subData.id,
-      total: subData.total,
-      subTotal: subData.subTotal,
-      discount: subData.discount,
-      status: "pending",
-      paymentType: "banktransfer",
-    };
-
-    try {
-      const response = await fetch(getStrapiURL(`/invoices`), {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${jwt}`,
-        },
-        body: JSON.stringify(dataToSubmit),
-      });
-
-      const { status } = response;
-
-      if (status == 200) {
-        router.push("/dashboard/invoices");
-      } else {
-        console.log(response);
-      }
-    } catch (error) {
-      console.log("the error", error);
-    }
-  };
-
   React.useEffect(() => {
     fetchSubscriptions();
-    // //mount element
-    // card.mount("#element-container");
-    // //card change event listener
-    // card.addEventListener("change", function (event) {
-    //   if (event.loaded) {
-    //     console.log("UI loaded :" + event.loaded);
-    //     console.log("current currency is :" + card.getCurrency());
-    //   }
-    //   var displayError = document.getElementById("error-handler");
-    //   if (event.error) {
-    //     displayError.textContent = event.error.message;
-    //   } else {
-    //     displayError.textContent = "";
-    //   }
-    // });
-    // const form = document.getElementById("form-container");
-    // form.addEventListener("submit", function (event) {
-    //   event.preventDefault();
-
-    //   tap.createToken(card).then(function (result) {
-    //     console.log(result);
-    //     if (result.error) {
-    //       // Inform the user if there was an error
-    //       var errorElement = document.getElementById("error-handler");
-    //       errorElement.textContent = result.error.message;
-    //     } else {
-    //       // Send the token to your server
-    //       var errorElement = document.getElementById("success");
-    //       errorElement.style.display = "block";
-    //       var tokenElement = document.getElementById("token");
-    //       tokenElement.textContent = result.id;
-    //       tapTokenHandler(token);
-    //     }
-    //   });
-    // });
   }, []);
 
   return (
@@ -348,11 +322,6 @@ const SubscriptionListPage = ({ global, translations }) => {
 
                         <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
                           ${item.total}&nbsp;
-                          {item.discount > 0 && (
-                            <span className="text-xs text-red-500">
-                              ({item.discount}%)
-                            </span>
-                          )}
                         </td>
 
                         <td className="text-center px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-500">
@@ -413,6 +382,18 @@ const SubscriptionListPage = ({ global, translations }) => {
                         </td>
                         <td className="text-center px-6 py-4 whitespace-no-wrap text-right border-b border-gray-200 text-sm leading-5 font-medium">
                           {(nextPaymentDate < Date.now() || !lastInvoice) && (
+                            <Link
+                              href={`/dashboard/subscriptions/${item.id}/checkout`}
+                            >
+                              <a
+                                href={`/dashboard/subscriptions/${item.id}/checkout`}
+                                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                              >
+                                {translations.pay_subscription}
+                              </a>
+                            </Link>
+                          )}{" "}
+                          {/* {(nextPaymentDate < Date.now() || !lastInvoice) && (
                             <DropDownButton
                               buttonName={translations.pay_subscription}
                               options={[
@@ -434,7 +415,7 @@ const SubscriptionListPage = ({ global, translations }) => {
                                 },
                               ]}
                             />
-                          )}
+                          )} */}
                         </td>
                         {/* 
                           <td className="text-center px-6 py-4 whitespace-no-wrap text-right border-b border-gray-200 text-sm leading-5 font-medium">

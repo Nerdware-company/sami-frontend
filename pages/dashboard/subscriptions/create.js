@@ -550,7 +550,7 @@ const SubscriptionCreatePage = ({ global, translations, system }) => {
                       <h6 className="text-black font-medium">
                         {translations.order_summary}
                       </h6>
-                      <div
+                      {/* <div
                         className="
                 flex
                 justify-between
@@ -564,8 +564,8 @@ const SubscriptionCreatePage = ({ global, translations, system }) => {
                           {translations.subtotal}
                         </p>
                         <p className="text-black mr-4">${formState.subTotal}</p>
-                      </div>
-                      {formState.discount && (
+                      </div> */}
+                      {/* {formState.discount && (
                         <div
                           className={`
                             flex
@@ -586,7 +586,7 @@ const SubscriptionCreatePage = ({ global, translations, system }) => {
                             {formState.discount}%
                           </p>
                         </div>
-                      )}
+                      )} */}
                       <div
                         className="
                 flex
@@ -610,7 +610,7 @@ const SubscriptionCreatePage = ({ global, translations, system }) => {
                         </p>
                       </div>
 
-                      <div
+                      {/* <div
                         className="
                 flex flex-col
                 justify-between
@@ -650,7 +650,7 @@ const SubscriptionCreatePage = ({ global, translations, system }) => {
                         >
                           {translations.apply_code}
                         </button>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>
